@@ -137,10 +137,7 @@ class ClientManager {
                                 SwingUtilities.invokeLater(() -> {
                                     JOptionPane.showMessageDialog(frame, "Room not found");
                                 });
-                            } else if ("NameIsNull".equals(messageFromServer)) {
-
                             }
-
                         } /*else if (messageFromServer instanceof PlayerAction) {
                         PlayerAction action = (PlayerAction) messageFromServer;
                         // ทำการจัดการกับ PlayerAction ที่ส่งมา

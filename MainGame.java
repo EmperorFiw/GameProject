@@ -25,7 +25,7 @@ public class MainGame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             ClientManager client = new ClientManager();
-            client.mainMenu();
+            client.mainMenu(true);
             client.connectToServer();
         });
     }
@@ -35,85 +35,94 @@ class ClientManager {
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private Socket socket;
-    private String playerName = null;
+    PlayMenu playMenu = new PlayMenu();
 
     JFrame frame = new JFrame();
 
-    public void mainMenu() {
-        frame.setSize(620,723);
-        frame.setTitle("Zombie Hunter");
-        frame.setLocationRelativeTo(null);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new BorderLayout());
-        
-        JPanel panels = new JPanel();
-        panels.setLayout(new GridLayout(2,1));
+    public void mainMenu(boolean showMain) {
+        if (showMain)
+        {
 
-        panels.setBackground(new Color(99, 93, 221));
-
-        frame.add(panels);
-        
-        ImageIcon icon = new ImageIcon("image/icon.png");
-        frame.setIconImage(icon.getImage());
-        
-        Image img = icon.getImage();
-        Image resetsize = img.getScaledInstance(267, 268, Image.SCALE_SMOOTH);
-        ImageIcon resizedIcon = new ImageIcon(resetsize);
-        JLabel imageLabel = new JLabel(resizedIcon);
-        panels.add(imageLabel);
-
-        JPanel buttonPanel = new JPanel(new GridBagLayout());
-        buttonPanel.setBackground(new Color(99, 93, 221));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.NONE; 
-        gbc.gridx = 0;
-        gbc.gridy = GridBagConstraints.RELATIVE;
-        gbc.insets = new Insets(10, 0, 10, 0); //กำหนดระยะห่างของ button
-
-        Dimension buttonsize = new Dimension(290,70); // setค่า defualt ให้กับ buttonsize
-
-        Button_ btnCreate = new Button_("Create a Room", 290, 70, Color.WHITE, 25);
-        Button_ btnJoin = new Button_("Join a Room", 290, 70, Color.WHITE, 25);
-        Button_ btnHowtoplay = new Button_("How to Play", 290, 70, Color.WHITE, 25);
-        Button_ exits = new Button_("Exits", 290, 70, Color.WHITE, 25);
-
-        btnCreate.setPreferredSize(buttonsize);
-        btnJoin.setPreferredSize(buttonsize);
-        btnHowtoplay.setPreferredSize(buttonsize);
-        exits.setPreferredSize(buttonsize);
-
-        buttonPanel.add(btnCreate,gbc);
-        buttonPanel.add(btnJoin,gbc);
-        buttonPanel.add(btnHowtoplay,gbc);
-        buttonPanel.add(exits,gbc);
-
-        panels.add(buttonPanel);
-
-        frame.setVisible(true);
-     //กด Exit แล้วออกโปรแกรม
-        exits.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
+            frame.setSize(620,723);
+            frame.setTitle("Zombie Hunter");
+            frame.setLocationRelativeTo(null);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setLayout(new BorderLayout());
             
-        });
-        btnJoin.addActionListener(e -> {
-            String name = JOptionPane.showInputDialog(frame, "Enter Your Name");
-            if (name != null && !name.isEmpty()) {
-                changeName(name);
-            }
-        });
-        btnCreate.addActionListener(e -> {
-            if (socket != null && socket.isConnected() && !socket.isClosed()) {
-                // ส่งคำสั่งสร้างห้องใหม่
-                PlayerAction action = new PlayerAction(PlayerAction.ActionType.CREATE_ROOM, null);
-                sendAction(action);
-            } else {
-                JOptionPane.showMessageDialog(frame, "Unable to start game. Not connected to server.");
-            }
-        });
+            JPanel panels = new JPanel();
+            panels.setLayout(new GridLayout(2,1));
+    
+            panels.setBackground(new Color(99, 93, 221));
+    
+            frame.add(panels);
+            
+            ImageIcon icon = new ImageIcon("image/icon.png");
+            frame.setIconImage(icon.getImage());
+            
+            Image img = icon.getImage();
+            Image resetsize = img.getScaledInstance(267, 268, Image.SCALE_SMOOTH);
+            ImageIcon resizedIcon = new ImageIcon(resetsize);
+            JLabel imageLabel = new JLabel(resizedIcon);
+            panels.add(imageLabel);
+    
+            JPanel buttonPanel = new JPanel(new GridBagLayout());
+            buttonPanel.setBackground(new Color(99, 93, 221));
+    
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.fill = GridBagConstraints.NONE; 
+            gbc.gridx = 0;
+            gbc.gridy = GridBagConstraints.RELATIVE;
+            gbc.insets = new Insets(10, 0, 10, 0); //กำหนดระยะห่างของ button
+    
+            Dimension buttonsize = new Dimension(290,70); // setค่า defualt ให้กับ buttonsize
+    
+            Button_ btnCreate = new Button_("Create a Room", 290, 70, Color.WHITE, 25);
+            Button_ btnJoin = new Button_("Join a Room", 290, 70, Color.WHITE, 25);
+            Button_ btnHowtoplay = new Button_("How to Play", 290, 70, Color.WHITE, 25);
+            Button_ exits = new Button_("Exits", 290, 70, Color.WHITE, 25);
+    
+            btnCreate.setPreferredSize(buttonsize);
+            btnJoin.setPreferredSize(buttonsize);
+            btnHowtoplay.setPreferredSize(buttonsize);
+            exits.setPreferredSize(buttonsize);
+    
+            buttonPanel.add(btnCreate,gbc);
+            buttonPanel.add(btnJoin,gbc);
+            buttonPanel.add(btnHowtoplay,gbc);
+            buttonPanel.add(exits,gbc);
+    
+            panels.add(buttonPanel);
+    
+            frame.setVisible(true);
+         //กด Exit แล้วออกโปรแกรม
+            exits.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.exit(0);
+                }
+                
+            });
+            btnJoin.addActionListener(e -> {
+                String name = JOptionPane.showInputDialog(frame, "Enter Your Name");
+                if (name != null && !name.isEmpty()) {
+                    changeName(name);
+                }
+            });
+            btnCreate.addActionListener(e -> {
+                if (socket != null && socket.isConnected() && !socket.isClosed()) {
+                    // ส่งคำสั่งสร้างห้องใหม่
+                    PlayerAction action = new PlayerAction(PlayerAction.ActionType.CREATE_ROOM, null);
+                    sendAction(action);
+                    mainMenu(false);
+                    playMenu.showPlayMenu();
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Unable to start game. Not connected to server.");
+                }
+            });
+        } else
+        {
+            frame.setVisible(false);
+        }
     }
 
     public void connectToServer() {
@@ -131,7 +140,9 @@ class ClientManager {
                             String message = (String) messageFromServer;
                             System.out.println(message);
                             if ("RoomExists".equals(message)) {
+                                mainMenu(false);
                                 System.out.println("Joining room");
+                                playMenu.showPlayMenu();
                             } else if ("RoomNotExists".equals(message)) {
                                 System.out.println("Room not found");
                                 SwingUtilities.invokeLater(() -> {

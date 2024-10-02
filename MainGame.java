@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -39,6 +40,34 @@ class ClientManager {
 
     JFrame frame = new JFrame();
 
+    public ObjectOutputStream getOutputStream() {
+        return out;
+    }
+
+    // Setter สำหรับ ObjectOutputStream
+    public void setOutputStream(ObjectOutputStream out) {
+        this.out = out;
+    }
+
+    // Getter สำหรับ ObjectInputStream
+    public ObjectInputStream getInputStream() {
+        return in;
+    }
+
+    // Setter สำหรับ ObjectInputStream
+    public void setInputStream(ObjectInputStream in) {
+        this.in = in;
+    }
+
+    // Getter สำหรับ Socket
+    public Socket getSocket() {
+        return socket;
+    }
+
+    // Setter สำหรับ Socket
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
     public void mainMenu(boolean showMain) {
         if (showMain)
         {
@@ -114,7 +143,6 @@ class ClientManager {
                     PlayerAction action = new PlayerAction(PlayerAction.ActionType.CREATE_ROOM, null);
                     sendAction(action);
                     mainMenu(false);
-                    playMenu.showPlayMenu();
                 } else {
                     JOptionPane.showMessageDialog(frame, "Unable to start game. Not connected to server.");
                 }
@@ -136,31 +164,34 @@ class ClientManager {
                 try {
                     Object messageFromServer;
                     while ((messageFromServer = in.readObject()) != null) {
-                        if (messageFromServer instanceof String) {
-                            String message = (String) messageFromServer;
-                            System.out.println(message);
-                            if ("RoomExists".equals(message)) {
-                                mainMenu(false);
-                                System.out.println("Joining room");
-                                playMenu.showPlayMenu();
-                            } else if ("RoomNotExists".equals(message)) {
-                                System.out.println("Room not found");
-                                SwingUtilities.invokeLater(() -> {
-                                    JOptionPane.showMessageDialog(frame, "Room not found");
-                                });
-                            }
-                        } /*else if (messageFromServer instanceof PlayerAction) {
-                        PlayerAction action = (PlayerAction) messageFromServer;
-                        // ทำการจัดการกับ PlayerAction ที่ส่งมา
-                        System.out.println("Received PlayerAction: " + action.getActionType());
-                    } */
+                        // จัดการข้อความจากเซิร์ฟเวอร์
                     }
+                } catch (SocketException e) {
+                    System.out.println("Connection was reset: " + e.getMessage());
+                    closeConnection();
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
+                    closeConnection(); // ปิดการเชื่อมต่อเมื่อเกิดข้อผิดพลาด
                 }
             }).start();
+            
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    public void closeConnection() {
+        try {
+            if (in != null) {
+                in.close();
+            }
+            if (out != null) {
+                out.close();
+            }
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            System.out.println("Error closing connection: " + e.getMessage());
         }
     }
 
@@ -182,12 +213,19 @@ class ClientManager {
         }
     }
 
-    private void sendAction(PlayerAction action) {
-        try {
-            out.writeObject(action);
-            out.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void sendAction(PlayerAction action) {
+        if (out != null) {
+            try {
+                out.writeObject(action);
+                out.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Output stream is null, cannot send action.");
         }
     }
+    
+
+
 }

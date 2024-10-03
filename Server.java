@@ -83,6 +83,13 @@ public class Server {
             clients.remove(clientHandler);
         }
     }
+
+    public static void sendJoinRoom(int rid, int playerid, String playerName)
+    {
+        ClientManager clientManager = new ClientManager(); 
+        CreateRoomFrame rframe = new CreateRoomFrame(new menuFrame(clientManager), playerName); // ส่ง ClientManager ไปยัง menuFrame
+        rframe.setTextForEmpty(playerid, playerName);
+    }
     
     
 }
@@ -93,7 +100,6 @@ class ClientHandler implements Runnable {
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private RoomManager rm = new RoomManager();
-    private PlayMenu playMenu = new PlayMenu();
     private ClientManager client = new ClientManager();
 
     public ClientHandler(Socket socket, PlayerSerializable player) {
@@ -151,24 +157,25 @@ class ClientHandler implements Runnable {
         switch (action.getActionType()) {
             case SET_NAME:
                 player.setName(action.getName());
+                // System.out.println("client req name");
                 sendMessage("Player name set to: " + action.getName());
                 break;
             case JOIN_ROOM:
                 int roomNumber = action.getRoomID();
+                //System.out.println("get from room");
                 if (!rm.IsRoomExists(roomNumber)) {
                     sendMessage("RoomNotExists");
                 } else {
                     player.setRoomID(roomNumber);
+                    Server.sendJoinRoom(roomNumber, player.getId(), player.getName());
                     sendMessage("RoomExists");
-                    playMenu.showPlayMenu(roomNumber);
                     Server.sendClientMessage(roomNumber, player.getName() + " has joined the room " + roomNumber);
                 }
                 break;
             case CREATE_ROOM:
-                int newRoomID = rm.setRoom();
+                int newRoomID = rm.setRoom(player.getName()); // ส่งชื่อผู้เล่นไปที่ RoomManager
                 player.setRoomID(newRoomID);
                 sendMessage("RoomCreated: " + newRoomID);
-                playMenu.showPlayMenu(newRoomID);
                 Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
                 break;
             case GET_NAME:
@@ -218,7 +225,7 @@ class ClientHandler implements Runnable {
 class RoomManager {
     private static Set<Integer> existingRoomIDs = new HashSet<>();
 
-    public int setRoom() {
+    public int setRoom(String playerName) {
         int roomID;
         do {
             roomID = (int) (Math.random() * 900000) + 100000;
@@ -226,6 +233,11 @@ class RoomManager {
 
         existingRoomIDs.add(roomID);
         System.out.println("Room ID: " + roomID);
+        // สร้าง ClientManager
+        ClientManager clientManager = new ClientManager(); 
+        CreateRoomFrame rframe = new CreateRoomFrame(new menuFrame(clientManager), playerName); // ส่ง ClientManager ไปยัง menuFrame
+        rframe.setTextForEmpty(0, playerName);
+        
         return roomID;
     }
 
@@ -265,6 +277,7 @@ class PlayerSerializable implements Serializable {
     public int getRoomID() {
         return roomID;
     }
+
 }
 
 

@@ -1,6 +1,8 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -29,7 +31,11 @@ class MainMenu extends JFrame {
 
     public MainMenu(int roomID) { // Accept room ID as a parameter
         MainPanel mainPanel = new MainPanel(roomID); // Pass room ID to the main panel
-        setSize(900, 650);
+            //รับค่าขนาดหน้าจอ
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+
+        // ตั้งค่า JFrame ให้มีขนาดเท่ากับขนาดของหน้าจอ
+        setSize(screenSize.width, screenSize.height);
         setLocationRelativeTo(null);
         setResizable(false);
         setLayout(new BorderLayout());

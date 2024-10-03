@@ -289,11 +289,6 @@ class CreateRoomFrame extends JFrame {
                     panelcenter.revalidate();
                     panelcenter.repaint();
                     
-                    // บังคับ JFrame ให้แสดงผลใหม่
-                    getContentPane().revalidate();
-                    getContentPane().repaint();
-                    pack();  // จัดขนาดหน้าต่างใหม่
-                    setVisible(true);  // บังคับให้แสดงผลหน้าต่างใหม่
                 }
             });
         } else {

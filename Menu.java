@@ -127,7 +127,9 @@ class menuFrame extends JFrame{
                 String name = JOptionPane.showInputDialog("Enter Your Name");
                 if (name != null && !name.isEmpty()) {
                     setVisible(false);
-                    new CreateRoomFrame(menuFrame.this, name).setVisible(true);
+                    CreateRoomFrame roomFrame = new CreateRoomFrame(menuFrame.this, name);
+                    roomFrame.setTextForEmpty(0, name); // เรียกใช้ทันทีเมื่อเปิด CreateRoomFrame
+                    roomFrame.setVisible(true);
                     client.changeName(name, "create");
                 } else {
                     JOptionPane.showMessageDialog(null, "Please enter your name to continue.");
@@ -303,7 +305,7 @@ class CreateRoomFrame extends JFrame {
         private Image bgfromImage;
 
         setbackground() {
-            bgfromImage = new ImageIcon(getClass().getResource("/image/newBackG.jpg")).getImage();
+            bgfromImage = new ImageIcon(getClass().getResource("/image/BackG.png")).getImage();
         }
 
         /* ============================ สั่งให้มันวาดที่ดึงมา =========================== */

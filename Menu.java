@@ -20,7 +20,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-
 public class Menu {
     public void showMainMenu(boolean show, ClientManager client) { // รับ ClientManager
         menuFrame mnF = new menuFrame(client); // ส่ง ClientManager ไปยัง menuFrame
@@ -106,6 +105,7 @@ class menuFrame extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 String name = JOptionPane.showInputDialog("Enter Your Name");
                 if (name != null && !name.isEmpty()) {
+
                     client.changeName(name, "join");
                 } else {
                     JOptionPane.showMessageDialog(null, "Please enter your name to continue.");
@@ -127,7 +127,7 @@ class menuFrame extends JFrame{
                 String name = JOptionPane.showInputDialog("Enter Your Name");
                 if (name != null && !name.isEmpty()) {
                     setVisible(false);
-                    CreateRoomFrame roomFrame = new CreateRoomFrame(menuFrame.this, name);
+                    CreateRoomFrame roomFrame = new CreateRoomFrame(menuFrame.this);
                     roomFrame.setTextForEmpty(0, name); // เรียกใช้ทันทีเมื่อเปิด CreateRoomFrame
                     roomFrame.setVisible(true);
                     client.changeName(name, "create");
@@ -138,6 +138,156 @@ class menuFrame extends JFrame{
         });
     }
 }
+class CreateRoomFrame extends JFrame {
+    private JLabel[] emptyLabels;
+    public String[] labelText = {"empty", "empty", "empty", "empty"};
+    
+    JPanel panelcenter = new JPanel();
+
+    CreateRoomFrame(menuFrame parent) {
+        // รับค่าขนาดหน้าจอ
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setSize(screenSize.width, screenSize.height);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        BackgroundPanel bgframe = new BackgroundPanel();
+        add(bgframe, BorderLayout.CENTER);
+        bgframe.setLayout(new GridBagLayout());
+
+        panelcenter.setPreferredSize(new Dimension(590, 620));
+        panelcenter.setBackground(new Color(215, 201, 255));
+        panelcenter.setLayout(new GridBagLayout());
+
+        // ====================== สร้าง JLabel สำหรับแสดง Room ID ======================
+        JLabel roomIdLabel = new JLabel("Room ID: 123");
+        roomIdLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        roomIdLabel.setForeground(Color.BLACK);
+        roomIdLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        // ====================== GridBagConstraints สำหรับ JLabel ======================
+        GridBagConstraints gbcRoomId = new GridBagConstraints();
+        gbcRoomId.gridx = 0;
+        gbcRoomId.gridy = 0;
+        gbcRoomId.anchor = GridBagConstraints.CENTER;
+        gbcRoomId.insets = new Insets(10, 0, 10, 0);
+        panelcenter.add(roomIdLabel, gbcRoomId);
+
+        // ====================== สร้าง array สำหรับ emptyLabels ======================
+        emptyLabels = new JLabel[4];
+
+        // ====================== สร้าง JLabel สำหรับข้อความ empty ======================
+        for (int i = 0; i < emptyLabels.length; i++) {
+            emptyLabels[i] = new JLabel(labelText[i]);
+            emptyLabels[i].setFont(new Font("Arial", Font.PLAIN, 18));
+            emptyLabels[i].setForeground(Color.BLACK);
+            emptyLabels[i].setHorizontalAlignment(JLabel.CENTER);
+
+            GridBagConstraints gbcEmpty = new GridBagConstraints();
+            gbcEmpty.gridx = 0;
+            gbcEmpty.gridy = i + 1;
+            gbcEmpty.anchor = GridBagConstraints.CENTER;
+            gbcEmpty.insets = new Insets(10, 0, 10, 0);
+            panelcenter.add(emptyLabels[i], gbcEmpty);
+        }
+
+        // ============================ จัด button ===========================
+        Button_ btnStart = new Button_("Start", 120, 60, new Color(218, 212, 207), 15);
+        btnStart.setBackground(new Color(255, 102, 255));
+        GridBagConstraints gbcButton = new GridBagConstraints();
+        gbcButton.gridx = 0;
+        gbcButton.gridy = 5; // วางปุ่ม Start ด้านล่างของ empty
+        gbcButton.anchor = GridBagConstraints.SOUTH;
+        panelcenter.add(btnStart, gbcButton);
+
+        // ============================ เพิ่ม action ให้กับปุ่ม Start ===========================
+        btnStart.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                panelcenter.revalidate();
+                panelcenter.repaint();
+            }
+        });
+
+        // เพิ่ม action listener สำหรับการปิดหน้าต่าง
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                parent.setVisible(true);
+            }
+        });
+
+        bgframe.add(panelcenter); // เพิ่ม panelcenter ลงใน bgframe
+        startUpdatingLabels();
+    }
+
+    public void startUpdatingLabels() {
+        new Thread(() -> {
+            while (true) {
+                for (int i = 0; i < labelText.length; i++) {
+                    String currentLabelText = labelText[i]; // สร้างตัวแปรใหม่ที่เก็บค่า
+                    if (currentLabelText != null) {
+                        int  x = i;
+                        SwingUtilities.invokeLater(() -> {
+                            emptyLabels[x].setText(currentLabelText); // อัปเดตเลเบลด้วยชื่อผู้เล่น
+                        });
+                    }
+                }
+                try {
+                    Thread.sleep(1000); // หยุด 1 วินาทีระหว่างการอัปเดต
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+    
+
+    // ============================ เมธอดตั้งค่าข้อความสำหรับ empty ============================
+    public void setTextForEmpty(int index, String text) {
+        System.out.println("Setting text for index: " + index + ", text: " + text);
+        String name = "Player " + (index + 1) + ": " + text;
+    
+        if (index >= 0 && index < emptyLabels.length) {
+            labelText[index] = name;
+            SwingUtilities.invokeLater(() -> {
+                emptyLabels[index].setText(name);
+                System.out.println("Updated JLabel at index " + index + " to: " + name); // ตรวจสอบการอัปเดต
+            });
+        } else {
+            System.out.println("Index out of bounds: " + index);
+        }
+    }
+
+    // Method สำหรับการ repaint CreateRoomFrame
+    public void repaintRoomFrame() {
+        panelcenter.revalidate(); // Re-layout the components
+        panelcenter.repaint();    // Repaint the panel
+    }
+
+    /* ============================ setBackground ที่ดึงภาพมา =========================== */
+
+    // คลาสสำหรับพื้นหลัง
+    class BackgroundPanel extends JPanel {
+        private Image bgfromImage;
+
+        BackgroundPanel() {
+            bgfromImage = new ImageIcon(getClass().getResource("/image/BackG.png")).getImage();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            g.drawImage(bgfromImage, 0, 0, getWidth(), getHeight(), this);
+        }
+    }
+}
+
+
+
+
+
 
 class howtoplays extends JFrame {
     howtoplays(menuFrame parent) { 
@@ -181,138 +331,5 @@ class howtoplays extends JFrame {
             }
             
         });
-    }
-}
-class CreateRoomFrame extends JFrame {
-    private JLabel[] emptyLabels;
-    JPanel panelcenter = new JPanel();
-
-    CreateRoomFrame(menuFrame parent, String playerName) {
-        // รับค่าขนาดหน้าจอ
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-
-        // ตั้งค่า JFrame ให้มีขนาดเท่ากับขนาดของหน้าจอ
-        setSize(screenSize.width, screenSize.height);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout());
-
-        JPanel createRoomPanel = new JPanel();
-        createRoomPanel.setBackground(new Color(64, 31, 113));
-        createRoomPanel.setLayout(new BorderLayout());
-        add(createRoomPanel);
-
-        Button_ btnStart = new Button_("Start", 120, 60, new Color(218, 212, 207), 15);
-        btnStart.setBackground(new Color(255, 102, 255));
-        setbackground bgframe = new setbackground();
-        add(bgframe);
-
-        bgframe.setLayout(new GridBagLayout());
-
-        
-        panelcenter.setPreferredSize(new Dimension(590, 620));
-        panelcenter.setBackground(new Color(215, 201, 255));
-        panelcenter.setLayout(new GridBagLayout());
-
-        // ====================== สร้าง JLabel สำหรับแสดง Room ID ======================
-        JLabel roomIdLabel = new JLabel("Room ID: 123");
-        roomIdLabel.setFont(new Font("Arial", Font.BOLD, 24)); // เปลี่ยนฟอนต์และขนาด
-        roomIdLabel.setForeground(Color.BLACK); // เปลี่ยนสีข้อความ
-        roomIdLabel.setHorizontalAlignment(JLabel.CENTER); // จัดตำแหน่งกลางแนวนอน
-
-        // ====================== GridBagConstraints สำหรับ JLabel ======================
-        GridBagConstraints gbcRoomId = new GridBagConstraints();
-        gbcRoomId.gridx = 0; // ตำแหน่ง x
-        gbcRoomId.gridy = 0; // ตำแหน่ง y
-        gbcRoomId.anchor = GridBagConstraints.CENTER; // จัดให้อยู่กลาง
-        gbcRoomId.insets = new Insets(10, 0, 10, 0); // เพิ่มระยะห่างด้านบนและล่าง
-
-        panelcenter.add(roomIdLabel, gbcRoomId); // เพิ่ม JLabel ลงใน panelcenter
-
-        // ====================== สร้าง array สำหรับ emptyLabels ======================
-        emptyLabels = new JLabel[4]; // สร้าง array สำหรับ 4 JLabel
-
-        // ====================== สร้าง JLabel สำหรับข้อความ empty ======================
-        for (int i = 0; i < emptyLabels.length; i++) {
-            emptyLabels[i] = new JLabel("empty"); // สร้าง JLabel ใหม่
-            emptyLabels[i].setFont(new Font("Arial", Font.PLAIN, 18)); // กำหนดฟอนต์
-            emptyLabels[i].setForeground(Color.BLACK); // กำหนดสีข้อความ
-            emptyLabels[i].setHorizontalAlignment(JLabel.CENTER); // จัดตำแหน่งกลางแนวนอน
-
-            // ====================== GridBagConstraints สำหรับ emptyLabel ======================
-            GridBagConstraints gbcEmpty = new GridBagConstraints();
-            gbcEmpty.gridx = 0; // ตำแหน่ง x
-            gbcEmpty.gridy = i + 1; // ตำแหน่ง y สำหรับแต่ละบรรทัด
-            gbcEmpty.anchor = GridBagConstraints.CENTER; // จัดให้อยู่กลาง
-            gbcEmpty.insets = new Insets(10, 0, 10, 0); // ระยะห่างระหว่างบรรทัด
-
-            panelcenter.add(emptyLabels[i], gbcEmpty); // เพิ่ม JLabel ลงใน panelcenter
-        }
-
-        // ============================ จัด button ===========================
-        GridBagConstraints gbcButton = new GridBagConstraints();
-        gbcButton.gridx = 0;
-        gbcButton.gridy = 5; // วางปุ่ม Start ด้านล่างของ empty
-        gbcButton.anchor = GridBagConstraints.SOUTH;
-        panelcenter.add(btnStart, gbcButton);
-
-        // ============================ เพิ่ม action ให้กับปุ่ม Create a room ===========================
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                parent.setVisible(true);
-            }
-        });
-
-        bgframe.add(panelcenter); // เพิ่ม panelcenter ลงใน bgframe
-
-        btnStart.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                setTextForEmpty(0, playerName);
-                panelcenter.revalidate();
-                panelcenter.repaint();
-            }
-        });
-        
-
-        // setTextForEmpty(0, playerName);
-    }
-    // ============================ เมธอดตั้งค่าข้อความสำหรับ empty ============================
-    public void setTextForEmpty(int index, String text) {
-        System.out.println("Setting text for index: " + index + ", text: " + text);
-        String name = "Player " + index + ": " + text;
-    
-        if (index >= 0 && index < emptyLabels.length) {
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    emptyLabels[index].setText(name);
-                    panelcenter.invalidate();  
-                    panelcenter.revalidate();
-                    panelcenter.repaint();
-                    
-                }
-            });
-        } else {
-            System.out.println("Index out of bounds: " + index);
-        }
-    }
-    
-    
-    
-    /* ============================ setBackground ที่ดึงภาพมา =========================== */
-    class setbackground extends JPanel {
-        private Image bgfromImage;
-
-        setbackground() {
-            bgfromImage = new ImageIcon(getClass().getResource("/image/BackG.png")).getImage();
-        }
-
-        /* ============================ สั่งให้มันวาดที่ดึงมา =========================== */
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            g.drawImage(bgfromImage, 0, 0, getWidth(), getHeight(), this);
-        }
     }
 }

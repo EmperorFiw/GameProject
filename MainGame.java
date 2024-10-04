@@ -57,30 +57,6 @@ class ClientManager {
     public void setSocket(Socket socket) {
         this.socket = socket;
     }
-         //กด Exit แล้วออกโปรแกรม
-           /* exits.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.exit(0);
-                }
-                
-            });
-            btnJoin.addActionListener(e -> {
-                String name = JOptionPane.showInputDialog(frame, "Enter Your Name");
-                if (name != null && !name.isEmpty()) {
-                    changeName(name);
-                }
-            });
-            btnCreate.addActionListener(e -> {
-                if (socket != null && socket.isConnected() && !socket.isClosed()) {
-                    // ส่งคำสั่งสร้างห้องใหม่
-                    PlayerAction action = new PlayerAction(PlayerAction.ActionType.CREATE_ROOM, null);
-                    sendAction(action);
-                    mainMenu(false);
-                } else {
-                    JOptionPane.showMessageDialog(frame, "Unable to start game. Not connected to server.");
-                }
-            });*/
     public void connectToServer() {
         try {
             socket = new Socket("localhost", 7777);
@@ -96,7 +72,9 @@ class ClientManager {
                             String message = (String) messageFromServer;
                             System.out.println(message);
                             if ("RoomExists".equals(message)) {
-                                System.out.println("Joining room");
+                                String numberPart = message.replaceAll("[^0-9]", "");
+                                sendJoinRoom(numberPart);
+                                System.out.println("Joining room " + numberPart);
                             } else if ("RoomNotExists".equals(message)) {
                                 System.out.println("Room not found");
                                 SwingUtilities.invokeLater(() -> {
@@ -174,6 +152,4 @@ class ClientManager {
         }
     }
     
-
-
 }

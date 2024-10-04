@@ -55,7 +55,7 @@ class menuFrame extends JFrame{
 
         add(panels);
         
-        ImageIcon icon = new ImageIcon("image/icon.png");
+        ImageIcon icon = new ImageIcon(getClass().getResource("/image/icon.png"));
         setIconImage(icon.getImage());
         
         Image img = icon.getImage();
@@ -153,7 +153,7 @@ class howtoplays extends JFrame {
         htpPanels.setLayout(new BorderLayout());
         add(htpPanels);
         
-        ImageIcon htpImage = new ImageIcon("image/htp.jpg");
+        ImageIcon htpImage = new ImageIcon(getClass().getResource("/image/htp.jpg"));
         Image imghtp = htpImage.getImage().getScaledInstance(screenSize.width/2, 670, Image.SCALE_SMOOTH);
         JLabel htplabelimage = new JLabel(new ImageIcon(imghtp));
 
@@ -303,7 +303,7 @@ class CreateRoomFrame extends JFrame {
         private Image bgfromImage;
 
         setbackground() {
-            bgfromImage = new ImageIcon("image/BackG.png").getImage();
+            bgfromImage = new ImageIcon(getClass().getResource("/image/newBackG.jpg")).getImage();
         }
 
         /* ============================ สั่งให้มันวาดที่ดึงมา =========================== */

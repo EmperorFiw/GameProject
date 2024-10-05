@@ -140,11 +140,12 @@ class menuFrame extends JFrame{
 }
 class CreateRoomFrame extends JFrame {
     private JLabel[] emptyLabels;
-    public String[] labelText = {"empty", "empty", "empty", "empty"};
+    public String[] labelText = {"Player 1: empty", "Player 2: empty", "Player 3: empty", "Player 4: empty"};
     
     JPanel panelcenter = new JPanel();
 
     CreateRoomFrame(menuFrame parent) {
+
         // รับค่าขนาดหน้าจอ
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setSize(screenSize.width, screenSize.height);
@@ -219,41 +220,19 @@ class CreateRoomFrame extends JFrame {
         });
 
         bgframe.add(panelcenter); // เพิ่ม panelcenter ลงใน bgframe
-        startUpdatingLabels();
-    }
 
-    public void startUpdatingLabels() {
-        new Thread(() -> {
-            while (true) {
-                for (int i = 0; i < labelText.length; i++) {
-                    String currentLabelText = labelText[i]; // สร้างตัวแปรใหม่ที่เก็บค่า
-                    if (currentLabelText != null) {
-                        int  x = i;
-                        SwingUtilities.invokeLater(() -> {
-                            emptyLabels[x].setText(currentLabelText); // อัปเดตเลเบลด้วยชื่อผู้เล่น
-                        });
-                    }
-                }
-                try {
-                    Thread.sleep(1000); // หยุด 1 วินาทีระหว่างการอัปเดต
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
     }
-    
 
     // ============================ เมธอดตั้งค่าข้อความสำหรับ empty ============================
     public void setTextForEmpty(int index, String text) {
         System.out.println("Setting text for index: " + index + ", text: " + text);
-        String name = "Player " + (index + 1) + ": " + text;
     
         if (index >= 0 && index < emptyLabels.length) {
-            labelText[index] = name;
+            this.labelText[index] = text;
             SwingUtilities.invokeLater(() -> {
-                emptyLabels[index].setText(name);
-                System.out.println("Updated JLabel at index " + index + " to: " + name); // ตรวจสอบการอัปเดต
+                emptyLabels[index].setText(text);
+                
+                System.out.println("อัพเดทใน for empty: " + index + " to: " + text); // ตรวจสอบการอัปเดต
             });
         } else {
             System.out.println("Index out of bounds: " + index);
@@ -264,6 +243,14 @@ class CreateRoomFrame extends JFrame {
     public void repaintRoomFrame() {
         panelcenter.revalidate(); // Re-layout the components
         panelcenter.repaint();    // Repaint the panel
+    }
+
+    // ============================ เมธอดสำหรับการดึงชื่อ ============================
+    public String getStringName(int id) {
+        if (id >= 0 && id < labelText.length) {
+            return labelText[id];
+        }
+        return null; // คืนค่า null ถ้า id นอกขอบเขต
     }
 
     /* ============================ setBackground ที่ดึงภาพมา =========================== */
@@ -283,8 +270,50 @@ class CreateRoomFrame extends JFrame {
         }
     }
 }
+class updateLb implements Runnable {
+    private String[] playerName = new String[4]; // กำหนดขนาดอาร์เรย์
+    private CreateRoomFrame createRoomFrame; // รับ CreateRoomFrame
+    private volatile boolean running = true; // ตัวแปรควบคุมการทำงานของ Thread
 
+    // Constructor ที่รับ CreateRoomFrame
+    updateLb(CreateRoomFrame createRoomFrame) {
+        this.createRoomFrame = createRoomFrame;
 
+        // กำหนดค่าเริ่มต้นให้กับ playerName
+        for (int i = 0; i < playerName.length; i++) {
+            playerName[i] = "Player " + (i + 1) + ": empty"; // ตั้งค่าชื่อผู้เล่น
+        }
+    }
+
+    @Override
+    public void run() {
+        while (running) {
+            for (int i = 0; i < playerName.length; i++) {
+                createRoomFrame.setTextForEmpty(i, playerName[i]); // อัปเดตข้อความ
+                System.out.println("อัพเดทใน thread: " + playerName[i]);
+            }
+
+            try {
+                Thread.sleep(1000); // หยุดการทำงานของ thread เป็นเวลา 1000 มิลลิวินาที (1 วินาที)
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // ตั้งค่า interrupt flag
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Method สำหรับการหยุด Thread
+    public void stop() {
+        running = false; // เปลี่ยนตัวแปรควบคุมเป็น false เพื่อหยุด Thread
+    }
+
+    public void setStringName(int id, String name) {
+        if (id >= 0 && id < playerName.length) {
+            playerName[id] = name; // อัปเดตชื่อผู้เล่น
+            System.out.println("อัพเดทใน setString thread: " + playerName[id]);
+        }
+    }
+}
 
 
 

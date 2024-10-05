@@ -91,9 +91,10 @@ public class Server {
     {
         ClientManager clientManager = new ClientManager(); 
         CreateRoomFrame rframe = new CreateRoomFrame(new menuFrame(clientManager)); // ส่ง ClientManager ไปยัง menuFrame
-        rframe.setTextForEmpty(playerid, playerName);
+        updateLb upl = new updateLb(rframe);
+        //rframe.setTextForEmpty(playerid, playerName);
+        upl.setStringName(playerid, playerName);
     }
-    
     
 }
 

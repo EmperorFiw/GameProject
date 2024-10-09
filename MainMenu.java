@@ -20,21 +20,20 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-public class Menu {
-    public void showMainMenu(boolean show, ClientManager client) { // รับ ClientManager
-        menuFrame mnF = new menuFrame(client); // ส่ง ClientManager ไปยัง menuFrame
-        if (show) {
-            mnF.setVisible(true);
-        } else {
-            mnF.setVisible(false);
+public class MainMenu {
+    private menuFrame mnF; // เก็บอินสแตนซ์ของ menuFrame
+
+    public void showMainMenu(boolean show, ClientManager client) {
+        if (mnF == null) {
+            mnF = new menuFrame(client); // สร้างหน้าต่างเฉพาะครั้งแรก
         }
+        mnF.setVisible(show); // แสดงหรือปิดหน้าต่าง
     }
 }
 
 class menuFrame extends JFrame{
     private ClientManager client;
 
-    // รับ ClientManager ผ่าน constructor
     menuFrame(ClientManager client) {
         this.client = client;
         //รับค่าขนาดหน้าจอ
@@ -104,21 +103,54 @@ class menuFrame extends JFrame{
             @Override
             public void actionPerformed(ActionEvent e) {
                 String name = JOptionPane.showInputDialog("Enter Your Name");
-                if (name != null && !name.isEmpty()) {
-
-                    client.changeName(name, "join");
-                } else {
-                    JOptionPane.showMessageDialog(null, "Please enter your name to continue.");
+                
+                // ตรวจสอบว่าชื่อไม่เป็น null และไม่ว่าง
+                if (name == null || name.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Please enter a valid name.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return; // ออกจากเมธอดหากชื่อไม่ถูกต้อง
+                }
+        
+                // เปลี่ยนชื่อผู้ใช้
+                client.changeName(name, 1);
+                
+                String roomNumberInput = JOptionPane.showInputDialog("Enter room number:");
+        
+                // ตรวจสอบหมายเลขห้อง
+                if (roomNumberInput == null || roomNumberInput.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Room number cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return; // ออกจากเมธอดหากหมายเลขห้องไม่ถูกต้อง
+                }
+        
+                try {
+                    int roomNumber = Integer.parseInt(roomNumberInput.trim()); // แปลงค่าเป็น int
+        
+                    // เช็คห้อง
+                    boolean roomExists = client.isRoomExist(roomNumber); 
+                    System.out.println("55555 it "+roomExists);
+                    if (roomExists) {
+                        // ห้องมีอยู่ ให้เข้าร่วม
+                        client.joinRoom(roomNumber); // เข้าร่วมห้องและเช็คผลลัพธ์
+                        setVisible(false); // ปิดหน้าต่างปัจจุบัน
+                        CreateRoomFrame roomFrame = new CreateRoomFrame(client);
+                        roomFrame.setVisible(true); // แสดงหน้าต่างห้อง
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Room does not exist. Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(null, "Invalid room number format. Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
+        
+        
+        
+        
         btnHowtoplay.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 setVisible(false);
-                new howtoplays(menuFrame.this).setVisible(true);
+                new howtoplays(client).setVisible(true);
             }
-            
         });
 
         btnCreate.addActionListener(new ActionListener() {
@@ -127,10 +159,10 @@ class menuFrame extends JFrame{
                 String name = JOptionPane.showInputDialog("Enter Your Name");
                 if (name != null && !name.isEmpty()) {
                     setVisible(false);
-                    CreateRoomFrame roomFrame = new CreateRoomFrame(menuFrame.this);
-                    roomFrame.setTextForEmpty(0, name); // เรียกใช้ทันทีเมื่อเปิด CreateRoomFrame
+                    CreateRoomFrame roomFrame = new CreateRoomFrame(client);
+                    //roomFrame.setTextForEmpty(0, name); // เรียกใช้ทันทีเมื่อเปิด CreateRoomFrame
                     roomFrame.setVisible(true);
-                    client.changeName(name, "create");
+                    client.changeName(name, 0);
                 } else {
                     JOptionPane.showMessageDialog(null, "Please enter your name to continue.");
                 }
@@ -144,7 +176,7 @@ class CreateRoomFrame extends JFrame {
     
     JPanel panelcenter = new JPanel();
 
-    CreateRoomFrame(menuFrame parent) {
+    CreateRoomFrame(ClientManager client) {
 
         // รับค่าขนาดหน้าจอ
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -215,7 +247,8 @@ class CreateRoomFrame extends JFrame {
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                parent.setVisible(true);
+                menuFrame mf = new menuFrame(client);
+                mf.setVisible(true);
             }
         });
 
@@ -274,10 +307,10 @@ class updateLb implements Runnable {
     private String[] playerName = new String[4]; // กำหนดขนาดอาร์เรย์
     private CreateRoomFrame createRoomFrame; // รับ CreateRoomFrame
     private volatile boolean running = true; // ตัวแปรควบคุมการทำงานของ Thread
-
+    private ClientManager client;
     // Constructor ที่รับ CreateRoomFrame
-    updateLb(CreateRoomFrame createRoomFrame) {
-        this.createRoomFrame = createRoomFrame;
+    updateLb(ClientManager client) {
+        this.client = client;
 
         // กำหนดค่าเริ่มต้นให้กับ playerName
         for (int i = 0; i < playerName.length; i++) {
@@ -319,7 +352,9 @@ class updateLb implements Runnable {
 
 
 class howtoplays extends JFrame {
-    howtoplays(menuFrame parent) { 
+    private ClientManager client;
+    howtoplays(ClientManager client) { 
+        this.client = client;
         //รับค่าขนาดหน้าจอ
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -348,7 +383,8 @@ class howtoplays extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
         public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-            parent.setVisible(true); 
+            menuFrame mnF = new menuFrame(client); // ส่ง ClientManager ไปยัง menuFrame
+            mnF.setVisible(true);
         }
         });
 
@@ -356,7 +392,8 @@ class howtoplays extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 setVisible(false); 
-                parent.setVisible(true); 
+                menuFrame mnF = new menuFrame(client); // ส่ง ClientManager ไปยัง menuFrame
+                mnF.setVisible(true);
             }
             
         });

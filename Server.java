@@ -1,4 +1,3 @@
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,13 +15,27 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-public class Server {
-    private static List<ClientHandler> clients = Collections.synchronizedList(new ArrayList<>());
-    private static Set<PlayerSerializable> players = Collections.synchronizedSet(new HashSet<>());
-    private static Queue<Integer> freeIDs = new LinkedList<>(); // คิวเพื่อเก็บไอดีที่ว่าง
-    private static int nextID = 0; // ตัวนับเพื่อให้ไอดีใหม่
-    public static Map<Integer, CreateRoomFrame> roomFrames = new HashMap<>();
+/*
+ * 0    Create Room
+ * 1    Join Room
+ * 2    Chnge Name
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
 
+public class Server {
+    private Player player;
+    private static List<ClientHandler> clients = Collections.synchronizedList(new ArrayList<>());
+    private static Queue<Integer> freeIDs = new LinkedList<>(); // Queue for storing available IDs
+    private static int nextID = 0; // Counter for generating new IDs
+    public static Map<Integer, List<String>> roomPlayers = new HashMap<>(); // Room player lists
+    private static ClientManager client = new ClientManager();
+    private static MainMenu mn = new MainMenu();
     public static void main(String[] args) {
         int port = 7777;
 
@@ -33,22 +46,20 @@ public class Server {
                 Socket socket = serverSocket.accept();
                 int playerId;
 
-                // ดึงไอดีจากคิวถ้ามีไอดีว่าง
+                // Get an ID from the queue if available
                 if (!freeIDs.isEmpty()) {
-                    playerId = freeIDs.poll(); // ดึงไอดีที่ว่าง
+                    playerId = freeIDs.poll(); // Retrieve available ID
                 } else {
-                    playerId = nextID++; // ใช้ไอดีใหม่
+                    playerId = nextID++; // Use a new ID
                 }
 
                 String playerName = "Player " + playerId;
-                PlayerSerializable newPlayer = new PlayerSerializable(playerName, playerId, -1);
-                players.add(newPlayer);
 
                 System.out.println(playerName + " has joined the server.");
 
-                ClientHandler clientHandler = new ClientHandler(socket, newPlayer);
+                ClientHandler clientHandler = new ClientHandler(socket, playerName, playerId, client);
                 clients.add(clientHandler);
-                new Thread(clientHandler).start(); // เริ่ม Thread สำหรับ ClientHandler
+                new Thread(clientHandler).start(); // Start a new thread for ClientHandler
             }
 
         } catch (IOException e) {
@@ -57,12 +68,16 @@ public class Server {
         }
     }
 
-    public static void removePlayer(PlayerSerializable player) {
-        // เพิ่มไอดีที่ถูกลบกลับไปยังคิว
-        freeIDs.add(player.getId()); // ให้ไอดีกลับไปยังคิวเพื่อใช้ใหม่
-        players.remove(player);
+    public static void removePlayer(Player player) {
+        // Add the removed player's ID back to the queue
+        freeIDs.add(player.getId());
+        if (player.isOwner())
+        {
+            client.removeRoomEx(player.getRoomID());
+            player.setOwner(false);
+        }
+        clients.removeIf(client -> client.getPlayer().getId() == player.getId());
         System.out.println(player.getName() + " has been removed from the server.");
-
     }
 
     public static void sendClientMessageToAll(String message) {
@@ -72,10 +87,10 @@ public class Server {
     }
 
     public static void sendClientMessage(int rid, String message) {
-        synchronized (clients) {  // ใช้ synchronized เพื่อป้องกันปัญหาหลาย thread
+        synchronized (clients) {
             for (ClientHandler client : clients) {
-                if (client.getPlayer().getRoomID() == rid) {  // ตรวจสอบว่าผู้เล่นอยู่ในห้องที่ต้องการหรือไม่
-                    client.sendMessage(message);  // ส่งข้อความไปยังผู้เล่นในห้องนั้น
+                if (client.getPlayer().getRoomID() == rid) {
+                    client.sendMessage(message);
                 }
             }
         }
@@ -87,65 +102,84 @@ public class Server {
         }
     }
 
-    public static void sendJoinRoom(int rid, int playerid, String playerName)
-    {
-        ClientManager clientManager = new ClientManager(); 
-        CreateRoomFrame rframe = new CreateRoomFrame(new menuFrame(clientManager)); // ส่ง ClientManager ไปยัง menuFrame
-        updateLb upl = new updateLb(rframe);
-        //rframe.setTextForEmpty(playerid, playerName);
-        upl.setStringName(playerid, playerName);
+    public static void sendJoinRoom(int rid, int playerid, String playerName) {
+        System.out.println("Player " + playerName + " with ID " + playerid + " joined room " + rid);
+        
+        // ปิดหน้าเมนู
+        mn.showMainMenu(false, client);
+        
+        // สร้าง roomFrame ใหม่ที่นี่หรือทำให้แน่ใจว่า roomFrame ถูกสร้างขึ้นแล้ว
+       /* CreateRoomFrame roomFrame = new CreateRoomFrame(client); // สร้างห้องใหม่
+        roomFrame.setVisible(true); // แสดงห้องใหม่*/
     }
     
 }
 
 class ClientHandler implements Runnable {
     private Socket socket;
-    private PlayerSerializable player;
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private static Set<Integer> existingRoomIDs = new HashSet<>();
-    private ClientManager client = new ClientManager();
+    private Player player; // Use Player instead of ClientManager
+    private ClientManager client;
 
-    
-    public ClientHandler(Socket socket, PlayerSerializable player) {
+    public ClientHandler(Socket socket, String playerName, int playerId, ClientManager client) {
         this.socket = socket;
-        this.player = player;
+        this.player = new Player(playerName, playerId, -1); // Create new Player
+        this.client = client;
     }
-    public PlayerSerializable getPlayer() {
-        return player;
-    }
-
 
     @Override
     public void run() {
         try {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
-    
+
             Object clientMessage;
             while (true) {
                 try {
                     clientMessage = in.readObject();
-                    if (clientMessage instanceof PlayerAction) {
-                        handlePlayerAction((PlayerAction) clientMessage);
-                    }
+                    if (clientMessage instanceof Integer) {
+                        int commandId = (Integer) clientMessage;
 
+                        switch (commandId) {
+                            case 0: // create room
+                                createRoom();
+                                break;
+                            case 1: // Join
+                                int roomNumber = (int) in.readObject(); // Get the room number from the client
+                                joinRoom(roomNumber);
+
+                                break;
+                            
+                            case 2: // change name
+                                int commandType = (Integer) in.readObject(); // Get the type (0 for creating room, 1 for changing name)
+                                String newName = (String) in.readObject(); // Get the new name from the client
+                            
+                                if (commandType == 0) {
+                                    createRoom();
+                                    changeName(newName); 
+
+                                } else if (commandType == 1) {
+                                    changeName(newName); 
+                                }
+                                break;
+                            
+                            default:
+                                System.out.println("Unknown command ID: " + commandId);
+                        }
+                    }
                 } catch (SocketException e) {
-                    // แสดงข้อความที่ชัดเจนเมื่อ Client ถูกตัดการเชื่อมต่อ
                     System.out.println(player.getName() + " has disconnected (Connection reset).");
                     Server.removePlayer(player);
-                    break; // ออกจากลูป
-                } catch (IOException e) {
-                    System.out.println("I/O error: " + e.getMessage());
-                    break; // ออกจากลูปเมื่อมีข้อผิดพลาดในการอ่าน
-                } catch (ClassNotFoundException e) {
-                    System.out.println("Class not found: " + e.getMessage());
-                    break; // ออกจากลูปเมื่อไม่พบคลาส
+                    break;
+                } catch (IOException | ClassNotFoundException e) {
+                    System.out.println("Error: " + e.getMessage());
+                    break;
                 }
             }
-    
+
         } catch (IOException e) {
-            // กรณีที่เกิดข้อผิดพลาดขณะสร้าง ObjectOutputStream หรือ ObjectInputStream
             System.out.println(player.getName() + " has left the room.");
             Server.removePlayer(player);
         } finally {
@@ -156,90 +190,6 @@ class ClientHandler implements Runnable {
             }
         }
     }
-    
-
-    private void handlePlayerAction(PlayerAction action) {
-        switch (action.getActionType()) {
-            case SET_NAME:
-                player.setName(action.getName());
-                // System.out.println("client req name");
-                sendMessage("Player name set to: " + action.getName());
-                break;
-            case JOIN_ROOM:
-                int roomNumber = action.getRoomID();
-                if (!IsRoomExists(roomNumber)) {
-                    sendMessage("RoomNotExists");
-                } else {
-                    player.setRoomID(roomNumber);
-                    
-                    // ใช้ CreateRoomFrame เดิมถ้าห้องมีอยู่แล้ว
-                    CreateRoomFrame rframe;
-                    if (Server.roomFrames.containsKey(roomNumber)) {
-                        rframe = Server.roomFrames.get(roomNumber);
-                    } else {
-                        rframe = new CreateRoomFrame(new menuFrame(client));
-                        Server.roomFrames.put(roomNumber, rframe);
-                    }
-                    Menu menu = new Menu();
-                    menu.showMainMenu(false, client);
-                    menuFrame mf = new menuFrame(client);
-                    mf.setVisible(false);
-                    CreateRoomFrame roomFrame = new CreateRoomFrame(mf);
-                    roomFrame.setTextForEmpty(1, player.getName()); // เรียกใช้ทันทีเมื่อเปิด CreateRoomFrame
-                    roomFrame.setVisible(true);
-                    rframe.setTextForEmpty(player.getId(), player.getName());
-                    
-                    sendMessage("RoomExists" + roomNumber);
-                    Server.sendClientMessage(roomNumber, player.getName() + " has joined the room " + roomNumber);
-
-                }
-                break;
-            
-            case CREATE_ROOM:
-                int newRoomID = setRoom(player.getName());
-                player.setRoomID(newRoomID);
-                
-                // สร้าง CreateRoomFrame สำหรับห้องใหม่
-                CreateRoomFrame rframe = new CreateRoomFrame(new menuFrame(client));
-                Server.roomFrames.put(newRoomID, rframe);
-                
-                rframe.setTextForEmpty(player.getId(), player.getName());
-                
-                sendMessage("RoomCreated: " + newRoomID);
-                Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
-                break;
-            
-            case GET_NAME:
-                sendMessage(player.getName());
-                break;
-            case EXIT_GAME:
-                System.out.println(player.getName() + " Try Exit");
-                Server.removePlayer(player);
-            
-                // ตรวจสอบว่า socket ยังไม่ถูกปิด
-                if (out != null) {
-                    try {
-                        out.writeObject("Goodbye"); // ส่งข้อความก่อนปิด
-                        out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            
-                try {
-                    if (!socket.isClosed()) {
-                        socket.close(); // ปิด socket
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    Server.removeClient(this);
-                    System.out.println(player.getName() + " has exited the game.");
-                }
-                break;            
-            
-        }
-    }
 
     public void sendMessage(Serializable message) {
         if (out != null) {
@@ -247,104 +197,75 @@ class ClientHandler implements Runnable {
                 out.writeObject(message);
                 out.flush();
             } catch (IOException e) {
-                //e.printStackTrace();
+                e.printStackTrace();
             }
         }
     }
-    public int setRoom(String playerName) {
+
+    public int setRoom() {
         int roomID;
         do {
             roomID = (int) (Math.random() * 900000) + 100000;
         } while (existingRoomIDs.contains(roomID));
 
         existingRoomIDs.add(roomID);
+
+        player.setOwner(true);
+        player.setRoomID(roomID);
         System.out.println("Room ID: " + roomID);
-        // สร้าง ClientManager
-       // ClientManager clientManager = new ClientManager(); 
-        CreateRoomFrame rframe = new CreateRoomFrame(new menuFrame(client)); // ส่ง ClientManager ไปยัง menuFrame
-        rframe.setTextForEmpty(0, playerName);
+
+        return roomID;
+    }
+
+    public void createRoom() {
+        int newRoomID = setRoom(); // No arguments needed
+        player.setRoomID(newRoomID);
+        client.addRoomEx(newRoomID);
+    
+        // Update player list in the room
+        Server.roomPlayers.putIfAbsent(newRoomID, new ArrayList<>()); // Access roomPlayers via Server
+        Server.roomPlayers.get(newRoomID).add(player.getName());
+    
+        sendMessage("RoomCreated: " + newRoomID);
+        Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
+        Server.sendJoinRoom(newRoomID, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
+    }
+    
+    public boolean joinRoom(int roomNumber) {
+        player.setRoomID(roomNumber);
         
-        return roomID;
+        // Update player list in the room
+        Server.roomPlayers.putIfAbsent(roomNumber, new ArrayList<>());
+        Server.roomPlayers.get(roomNumber).add(player.getName());
+        
+        sendMessage("RoomExists: " + roomNumber);
+        Server.sendClientMessage(roomNumber, player.getName() + " has joined the room " + roomNumber);
+        
+        Server.sendJoinRoom(roomNumber, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
+        
+        return true; // คืนค่าประสบความสำเร็จ
+    }
+    
+    
+    
+    public boolean roomExists(int roomNumber) {
+        return Server.roomPlayers.containsKey(roomNumber);
+    }
+    
+    public Player getPlayer() {
+        return player; // Method to access the Player
     }
 
-    public boolean IsRoomExists(int id) {
-        return existingRoomIDs.contains(id);
-    }   
+    public void changeName(String newName) {
+        String oldName = player.getName(); // เก็บชื่อเดิม
+        player.changeName(newName); // เรียก method changeName ใน class Player เพื่ออัพเดตชื่อ
+    
+        // ส่งข้อความให้ทุกคนในห้องว่าผู้เล่นได้เปลี่ยนชื่อ
+        int roomID = player.getRoomID();
+        Server.sendClientMessage(roomID, oldName + " has changed their name to " + newName);
+        
+        // แจ้งผู้เล่นเอง
+        sendMessage("Your name has been changed to " + newName);
+    }
+    
 }
-//ค่าจริงที่เก็บอยู่
-class PlayerSerializable implements Serializable {
-    private String name;
-    private int id; 
-    private int roomID;
-
-    public PlayerSerializable(String name, int id, int roomID) {
-        this.name = name;
-        this.id = id;
-        this.roomID = roomID;
-    }
-
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setRoomID(int roomID) {
-        this.roomID = roomID;
-    }
-
-    public int getRoomID() {
-        return roomID;
-    }
-
-}
-
-
-//เอาไว้เก็บการทำงานจากฝั่ง client
-class PlayerAction implements Serializable {
-    public enum ActionType { 
-        SET_NAME, 
-        JOIN_ROOM, 
-        CREATE_ROOM, 
-        GET_NAME, 
-        EXIT_GAME
-    }
-
-    private ActionType actionType;
-    private String name;
-    private int roomID;
-
-    public PlayerAction(ActionType actionType) {
-        this.actionType = actionType;
-    }
-
-    public PlayerAction(ActionType actionType, String name) {
-        this.actionType = actionType;
-        this.name = name;
-    }
-
-    public PlayerAction(ActionType actionType, int roomID) {
-        this.actionType = actionType;
-        this.roomID = roomID;
-    }
-
-    public ActionType getActionType() {
-        return actionType;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getRoomID() {
-        return roomID;
-    }
-}
-

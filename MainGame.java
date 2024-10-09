@@ -1,68 +1,51 @@
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-
+/*
+/*
+ * 0    Create Room
+ * 1    Join Room
+ * 2    Chnge Name
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
 public class MainGame {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            ClientManager client = new ClientManager();
-            client.connectToServer();
-            Menu menu = new Menu();
-            menu.showMainMenu(true, client); // ส่ง client ไปยัง Menu
-
-        });
+        ClientManager client = new ClientManager();
+        client.connectToServer();
+        MainMenu menu = new MainMenu();
+        menu.showMainMenu(true, client);
     }
-
 }
 
 class ClientManager {
+    private Set<Integer> roomEx = new HashSet<>();
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private Socket socket;
+    private Player player; // เพิ่มตัวแปร Player
 
     JFrame frame = new JFrame();
 
-    public ObjectOutputStream getOutputStream() {
-        return out;
-    }
-
-    // Setter สำหรับ ObjectOutputStream
-    public void setOutputStream(ObjectOutputStream out) {
-        this.out = out;
-    }
-
-    // Getter สำหรับ ObjectInputStream
-    public ObjectInputStream getInputStream() {
-        return in;
-    }
-
-    // Setter สำหรับ ObjectInputStream
-    public void setInputStream(ObjectInputStream in) {
-        this.in = in;
-    }
-
-    // Getter สำหรับ Socket
-    public Socket getSocket() {
-        return socket;
-    }
-
-    // Setter สำหรับ Socket
-    public void setSocket(Socket socket) {
-        this.socket = socket;
-    }
     public void connectToServer() {
         try {
             socket = new Socket("localhost", 7777);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
+            // สร้าง Player ใหม่เมื่อเชื่อมต่อ
+            player = new Player("Player 1", 0, -1, false); // ตั้งค่าเริ่มต้น (สามารถเปลี่ยนแปลงได้ตามความเหมาะสม)
 
             new Thread(() -> {
                 try {
@@ -71,17 +54,6 @@ class ClientManager {
                         if (messageFromServer instanceof String) {
                             String message = (String) messageFromServer;
                             System.out.println(message);
-                            if ("RoomExists".equals(message)) {
-                                String numberPart = message.replaceAll("[^0-9]", "");
-                                sendJoinRoom(numberPart);
-                                System.out.println("Joining room " + numberPart);
-                            } else if ("RoomNotExists".equals(message)) {
-                                System.out.println("Room not found");
-                                SwingUtilities.invokeLater(() -> {
-                                    JOptionPane.showMessageDialog(frame, "Room ID not found");
-                                });
-                            }
-
                         }
                     }
                 } catch (SocketException e) {
@@ -97,6 +69,7 @@ class ClientManager {
             e.printStackTrace();
         }
     }
+
     public void closeConnection() {
         try {
             if (in != null) {
@@ -112,44 +85,51 @@ class ClientManager {
             System.out.println("Error closing connection: " + e.getMessage());
         }
     }
-
-    private void sendJoinRoom(String roomNumber) {
-        PlayerAction action = new PlayerAction(PlayerAction.ActionType.JOIN_ROOM, Integer.parseInt(roomNumber));
-        sendAction(action);
-    }
-
-    public void changeName(String name, String type) {
-        PlayerAction action = new PlayerAction(PlayerAction.ActionType.SET_NAME, name);
-        sendAction(action);
-        if ("join".equals(type))
-        {
-            joinRoom();
-        }
-        else if ("create".equals(type))
-        {
-            PlayerAction create = new PlayerAction(PlayerAction.ActionType.CREATE_ROOM, name);
-            sendAction(create);
-        }
-    }
- 
-    private void joinRoom() {
-        String roomNumber = JOptionPane.showInputDialog(frame, "Enter room number:");
-        if (roomNumber != null && !roomNumber.isEmpty()) {
-            sendJoinRoom(roomNumber);
-        }
-    }
-
-    public void sendAction(PlayerAction action) {
-        if (out != null) {
-            try {
-                out.writeObject(action);
-                out.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
+    
+    public void changeName(String name, int type) {
+        try {
+            out.writeObject(2); // ส่งคำสั่ง ID 2 สำหรับการเปลี่ยนชื่อ
+            if (type == 0)
+            {
+                out.writeObject(0);
+            } 
+            else
+            {
+                out.writeObject(1); 
             }
-        } else {
-            System.out.println("Output stream is null, cannot send action.");
+            out.writeObject(name); // ส่งชื่อใหม่ที่ต้องการเปลี่ยน
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
         }
     }
+    
+    public boolean joinRoom(int rid) {
+        try {
+            out.writeObject(rid); // ส่งหมายเลขห้องไปยังเซิร์ฟเวอร์
+            out.flush();
+    
+            return (boolean) in.readObject(); // รับค่าจากเซิร์ฟเวอร์
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
+            return false; // ถ้าเกิดข้อผิดพลาดให้คืนค่า false
+        }
+    }
+
+    public void addRoomEx(int roomID) {
+        roomEx.add(roomID); // เพิ่มห้องเข้าไปใน Set
+        System.out.println("Added Room ID: " + roomID); // แจ้งเมื่อเพิ่มห้อง
+        System.out.println("Current roomEx: " + roomEx); // แสดงค่าปัจจุบันของ roomEx
+    }
+
+    public boolean isRoomExist(int roomNumber) {
+        System.out.println("askr : "+roomEx.contains(roomNumber));
+        return roomEx.contains(roomNumber); // ตรวจสอบว่ามีห้องนี้อยู่หรือไม่
+    }
+
+    public void removeRoomEx(int roomID) {
+        roomEx.remove(roomID); // ฟังก์ชันสำหรับลบห้อง
+    }
+
     
 }

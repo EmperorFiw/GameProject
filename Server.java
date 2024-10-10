@@ -73,7 +73,6 @@ public class Server {
         freeIDs.add(player.getId());
         if (player.isOwner())
         {
-            client.removeRoomEx(player.getRoomID());
             player.setOwner(false);
         }
         clients.removeIf(client -> client.getPlayer().getId() == player.getId());
@@ -164,6 +163,13 @@ class ClientHandler implements Runnable {
                                     changeName(newName); 
                                 }
                                 break;
+                            case 3:
+                                int checkRoomNumber = (int) in.readObject();
+                                out.writeObject(3);
+                                out.writeObject(Server.roomPlayers.containsKey(checkRoomNumber));
+                                out.writeObject(checkRoomNumber);
+                                out.flush();
+                                break;
                             
                             default:
                                 System.out.println("Unknown command ID: " + commandId);
@@ -206,21 +212,19 @@ class ClientHandler implements Runnable {
         int roomID;
         do {
             roomID = (int) (Math.random() * 900000) + 100000;
-        } while (existingRoomIDs.contains(roomID));
-
-        existingRoomIDs.add(roomID);
-
+        } while (Server.roomPlayers.containsKey(roomID)); // ตรวจสอบจาก Server
+    
         player.setOwner(true);
         player.setRoomID(roomID);
         System.out.println("Room ID: " + roomID);
-
+    
         return roomID;
     }
+    
 
     public void createRoom() {
         int newRoomID = setRoom(); // No arguments needed
         player.setRoomID(newRoomID);
-        client.addRoomEx(newRoomID);
     
         // Update player list in the room
         Server.roomPlayers.putIfAbsent(newRoomID, new ArrayList<>()); // Access roomPlayers via Server
@@ -229,7 +233,12 @@ class ClientHandler implements Runnable {
         sendMessage("RoomCreated: " + newRoomID);
         Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
         Server.sendJoinRoom(newRoomID, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
+    
+        // Debug print
+        System.out.println("Current rooms: " + Server.roomPlayers.keySet()); // เพิ่มบรรทัดนี้เพื่อดูห้องที่มีอยู่
     }
+    
+    
     
     public boolean joinRoom(int roomNumber) {
         player.setRoomID(roomNumber);

@@ -125,17 +125,10 @@ class menuFrame extends JFrame{
                     int roomNumber = Integer.parseInt(roomNumberInput.trim()); // แปลงค่าเป็น int
         
                     // เช็คห้อง
-                    boolean roomExists = client.isRoomExist(roomNumber); 
-                    System.out.println("55555 it "+roomExists);
-                    if (roomExists) {
-                        // ห้องมีอยู่ ให้เข้าร่วม
-                        client.joinRoom(roomNumber); // เข้าร่วมห้องและเช็คผลลัพธ์
-                        setVisible(false); // ปิดหน้าต่างปัจจุบัน
-                        CreateRoomFrame roomFrame = new CreateRoomFrame(client);
-                        roomFrame.setVisible(true); // แสดงหน้าต่างห้อง
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Room does not exist. Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    client.isRoomExist(roomNumber); 
+                    setVisible(false);
+
+
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(null, "Invalid room number format. Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -168,6 +161,20 @@ class menuFrame extends JFrame{
                 }
             }
         });
+    }
+
+    public void joinRoomFrame()
+    {
+        setVisible(false); // ปิดหน้าต่างปัจจุบัน
+        revalidate(); // อัปเดตการแสดงผล
+        repaint(); // รีเฟรชการแสดงผล
+        CreateRoomFrame roomFrame = new CreateRoomFrame(client);
+        roomFrame.setVisible(true); // แสดงหน้าต่างห้อง
+    }
+
+    public void roomNotFound()
+    {
+        setVisible(true); 
     }
 }
 class CreateRoomFrame extends JFrame {
@@ -314,7 +321,7 @@ class updateLb implements Runnable {
 
         // กำหนดค่าเริ่มต้นให้กับ playerName
         for (int i = 0; i < playerName.length; i++) {
-            playerName[i] = "Player " + (i + 1) + ": empty"; // ตั้งค่าชื่อผู้เล่น
+            playerName[i] = "Player " + (i + 1) + ": empty5555"; // ตั้งค่าชื่อผู้เล่น
         }
     }
 

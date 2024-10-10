@@ -3,10 +3,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.HashSet;
-import java.util.Set;
 
-import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 /*
 /*
  * 0    Create Room
@@ -22,22 +20,31 @@ import javax.swing.JFrame;
  */
 public class MainGame {
     public static void main(String[] args) {
+        System.out.println("Current rooms: " + Server.roomPlayers.keySet());
         ClientManager client = new ClientManager();
         client.connectToServer();
+
+
+        menuFrame mf = new menuFrame(client);  // สร้าง menuFrame
+        client.setMenuFrame(mf);
+        
         MainMenu menu = new MainMenu();
         menu.showMainMenu(true, client);
+
     }
 }
 
 class ClientManager {
-    private Set<Integer> roomEx = new HashSet<>();
+    private menuFrame mf;
     private ObjectOutputStream out;
     private ObjectInputStream in;
+    private MainMenu mainmenu;
     private Socket socket;
     private Player player; // เพิ่มตัวแปร Player
 
-    JFrame frame = new JFrame();
-
+    public void setMenuFrame(menuFrame mf) {
+        this.mf = mf;
+    }
     public void connectToServer() {
         try {
             socket = new Socket("localhost", 7777);
@@ -54,6 +61,28 @@ class ClientManager {
                         if (messageFromServer instanceof String) {
                             String message = (String) messageFromServer;
                             System.out.println(message);
+    
+                        } else if (messageFromServer instanceof Integer) {
+                            int commandId = (Integer) messageFromServer;
+    
+                            switch (commandId) {
+                                case 3: // create room
+                                    boolean canJoin = (Boolean) in.readObject();
+                                    int rid = (Integer) in.readObject();
+                                    if (canJoin)
+                                    {
+                                        out.writeObject(1);
+                                        out.writeObject(rid);
+                                        out.flush();
+                                        mf.joinRoomFrame();
+                                    }
+                                    else
+                                    {
+                                        JOptionPane.showMessageDialog(null, "Room does not exist. Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
+                                        mf.roomNotFound();
+                                    }
+                                    break;
+                            }
                         }
                     }
                 } catch (SocketException e) {
@@ -116,20 +145,19 @@ class ClientManager {
         }
     }
 
-    public void addRoomEx(int roomID) {
-        roomEx.add(roomID); // เพิ่มห้องเข้าไปใน Set
-        System.out.println("Added Room ID: " + roomID); // แจ้งเมื่อเพิ่มห้อง
-        System.out.println("Current roomEx: " + roomEx); // แสดงค่าปัจจุบันของ roomEx
+    public void isRoomExist(int roomNumber) {
+        try {
+            out.writeObject(3);
+            out.writeObject(roomNumber);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
+        }
+        /*System.out.println("Checking roomNumber: " + roomNumber);
+        System.out.println("Existing rooms: " + Server.roomPlayers.keySet());
+        return Server.roomPlayers.containsKey(roomNumber);*/
     }
-
-    public boolean isRoomExist(int roomNumber) {
-        System.out.println("askr : "+roomEx.contains(roomNumber));
-        return roomEx.contains(roomNumber); // ตรวจสอบว่ามีห้องนี้อยู่หรือไม่
-    }
-
-    public void removeRoomEx(int roomID) {
-        roomEx.remove(roomID); // ฟังก์ชันสำหรับลบห้อง
-    }
+    
 
     
 }

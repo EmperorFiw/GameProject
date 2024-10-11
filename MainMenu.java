@@ -259,8 +259,8 @@ class CreateRoomFrame extends JFrame {
         });
 
         bgframe.add(panelcenter); // เพิ่ม panelcenter ลงใน bgframe
-        
-        updateLb updater = new updateLb(client, this); // ส่งอ้างอิง CreateRoomFrame
+        Player player = client.getPlayerData();
+        updateLb updater = new updateLb(client, player, this); // ส่งอ้างอิง CreateRoomFrame
         Thread updateThread = new Thread(updater);
         updateThread.start(); // เริ่ม Thread สำหรับอัปเดต UI
 
@@ -311,29 +311,42 @@ class CreateRoomFrame extends JFrame {
     }
 }
 
-
 class updateLb implements Runnable {
     private String[] playerName = new String[4]; 
     private CreateRoomFrame crf; 
     private volatile boolean running = true; 
     private ClientManager client;
+    private Player player;
 
-    updateLb(ClientManager client, CreateRoomFrame crf) {
+    updateLb(ClientManager client, Player player, CreateRoomFrame crf) {
         this.client = client;
         this.crf = crf; // เก็บอ้างอิง CreateRoomFrame
-        // กำหนดชื่อเริ่มต้น
+        this.player = player;
+
         for (int i = 0; i < playerName.length; i++) {
-            playerName[i] = "Player " + (i + 1) + ": empty"; 
+            playerName[i] = "Player " + (i + 1) + ": Empty"; 
         }
     }
 
     @Override
     public void run() {
         while (running) {
-            // อัปเดตชื่อผู้เล่นใน CreateRoomFrame
-            for (int i = 0; i < playerName.length; i++) {
-                crf.setNameInRoom(i, playerName[i]); // อัปเดตชื่อผู้เล่นในห้อง
-            }
+            // สมมติว่า player.getId() คืนค่า id ของผู้เล่น
+            int playerId = player.getId(); // ดึงค่า id ของ player
+
+            /*for (int i=0;i<4;i++)
+            {
+                if (playerId >= 0 && playerId < 4) { // ตรวจสอบว่า id อยู่ในช่วง 0 ถึง 3
+                    crf.setNameInRoom(playerId, "Player "+ i++ +": "+player.getAllPlayerInRoom(playerId)); 
+                    crf.setRoomNumber(player.getRoomID()); 
+                } else if (playerId >= 4) {
+                    // ถ้า playerId มากกว่า 3 ให้ทำการอัปเดตตามที่คุณต้องการ เช่น:
+                    crf.setNameInRoom(playerId - 4, player.getAllPlayerInRoom(playerId)); 
+                    crf.setRoomNumber(player.getRoomID()); 
+                }
+    
+            }*/
+
 
             try {
                 Thread.sleep(1000); 
@@ -354,12 +367,7 @@ class updateLb implements Runnable {
             System.out.println("Updated in setString thread: " + playerName[id]);
         }
     }
-
-    public void updatePlayer(int playerId, String playerName) {
-        setStringName(playerId, playerName); // อัปเดตชื่อผู้เล่นในอาเรย์
-    }
 }
-
 
 
 

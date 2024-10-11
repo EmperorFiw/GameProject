@@ -20,7 +20,6 @@ import javax.swing.JOptionPane;
  */
 public class MainGame {
     public static void main(String[] args) {
-        System.out.println("Current rooms: " + Server.roomPlayers.keySet());
         ClientManager client = new ClientManager();
         client.connectToServer();
 
@@ -71,7 +70,7 @@ class ClientManager {
                             int commandId = (Integer) messageFromServer;
     
                             switch (commandId) {
-                                case 0:
+                                case 0: //รับข้อมูลผู้เล่น
                                     String name = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
                                     int playerId = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
                                     int roomid = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
@@ -82,6 +81,12 @@ class ClientManager {
                                     this.player.setRoomID(roomid);
                                     this.player.setOwner(isOwner);
 
+                                    break;
+                                case 1: //จัดเก็บรายชื่อในห้อง
+                                    int index = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                    String pName = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                    System.out.println("Get name");
+                                    this.player.addInNameRoom(index, pName);
                                     break;
                                 case 3: // create room
                                     boolean canJoin = (Boolean) in.readObject();
@@ -173,5 +178,9 @@ class ClientManager {
         }
     }
 
-    
+    public Player getPlayerData()
+    {
+        return this.player;
+    }
+
 }

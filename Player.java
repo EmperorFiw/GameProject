@@ -4,7 +4,8 @@ public class Player implements Serializable {
     private String name;
     private int id;
     private int roomID;
-    private boolean isOwner;
+    private boolean isOwner = false;
+    private String[] allPlayerInRoom = {"Empty", "Empty", "Empty", "Empty"}; // แก้ไขให้เป็น String[]
 
 
     public Player(String name, int id, int roomID) {
@@ -55,8 +56,22 @@ public class Player implements Serializable {
         this.id = id;
     }
 
+    public String getAllPlayerInRoom(int index)
+    {
+        return this.allPlayerInRoom[index];
+    }
+
+    public void addInNameRoom(int index, String name)
+    {
+        if (index < 4)
+            this.allPlayerInRoom[index] = name;
+        else
+            this.allPlayerInRoom[index-4] = name;
+
+    }
     @Override
     public String toString() {
         return "Player{name='" + name + "', id=" + id + ", roomID=" + roomID + ", isOwner=" + isOwner + "}";
     }
+
 }

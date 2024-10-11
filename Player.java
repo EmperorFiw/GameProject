@@ -49,4 +49,14 @@ public class Player implements Serializable {
     {
         this.isOwner = owner;
     }
+
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return "Player{name='" + name + "', id=" + id + ", roomID=" + roomID + ", isOwner=" + isOwner + "}";
+    }
 }

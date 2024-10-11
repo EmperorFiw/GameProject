@@ -1,1 +1,1 @@
-getPlayersInRoom
+ClientManager

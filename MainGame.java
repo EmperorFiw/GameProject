@@ -24,7 +24,6 @@ public class MainGame {
         ClientManager client = new ClientManager();
         client.connectToServer();
 
-
         menuFrame mf = new menuFrame(client);  // สร้าง menuFrame
         client.setMenuFrame(mf);
         
@@ -45,6 +44,12 @@ class ClientManager {
     public void setMenuFrame(menuFrame mf) {
         this.mf = mf;
     }
+
+    public void setPlayer(Player player)
+    {
+        this.player = player;
+    }
+
     public void connectToServer() {
         try {
             socket = new Socket("localhost", 7777);
@@ -52,7 +57,7 @@ class ClientManager {
             in = new ObjectInputStream(socket.getInputStream());
 
             // สร้าง Player ใหม่เมื่อเชื่อมต่อ
-            player = new Player("Player 1", 0, -1, false); // ตั้งค่าเริ่มต้น (สามารถเปลี่ยนแปลงได้ตามความเหมาะสม)
+            player = new Player("Player", -1, -1, false);
 
             new Thread(() -> {
                 try {
@@ -66,6 +71,18 @@ class ClientManager {
                             int commandId = (Integer) messageFromServer;
     
                             switch (commandId) {
+                                case 0:
+                                    String name = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                    int playerId = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                    int roomid = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                    Boolean isOwner = (Boolean) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                
+                                    this.player.changeName(name);
+                                    this.player.setId(playerId);
+                                    this.player.setRoomID(roomid);
+                                    this.player.setOwner(isOwner);
+
+                                    break;
                                 case 3: // create room
                                     boolean canJoin = (Boolean) in.readObject();
                                     int rid = (Integer) in.readObject();
@@ -75,6 +92,7 @@ class ClientManager {
                                         out.writeObject(rid);
                                         out.flush();
                                         mf.joinRoomFrame();
+                                        player.setRoomID(rid);
                                     }
                                     else
                                     {
@@ -153,11 +171,7 @@ class ClientManager {
         } catch (IOException e) {
             e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
         }
-        /*System.out.println("Checking roomNumber: " + roomNumber);
-        System.out.println("Existing rooms: " + Server.roomPlayers.keySet());
-        return Server.roomPlayers.containsKey(roomNumber);*/
     }
-    
 
     
 }

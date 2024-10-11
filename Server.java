@@ -59,6 +59,7 @@ public class Server {
 
                 ClientHandler clientHandler = new ClientHandler(socket, playerName, playerId, client);
                 clients.add(clientHandler);
+                
                 new Thread(clientHandler).start(); // Start a new thread for ClientHandler
             }
 
@@ -84,7 +85,7 @@ public class Server {
             client.sendMessage(message);
         }
     }
-
+    
     public static void sendClientMessage(int rid, String message) {
         synchronized (clients) {
             for (ClientHandler client : clients) {
@@ -103,13 +104,8 @@ public class Server {
 
     public static void sendJoinRoom(int rid, int playerid, String playerName) {
         System.out.println("Player " + playerName + " with ID " + playerid + " joined room " + rid);
-        
         // ปิดหน้าเมนู
         mn.showMainMenu(false, client);
-        
-        // สร้าง roomFrame ใหม่ที่นี่หรือทำให้แน่ใจว่า roomFrame ถูกสร้างขึ้นแล้ว
-       /* CreateRoomFrame roomFrame = new CreateRoomFrame(client); // สร้างห้องใหม่
-        roomFrame.setVisible(true); // แสดงห้องใหม่*/
     }
     
 }
@@ -124,7 +120,7 @@ class ClientHandler implements Runnable {
 
     public ClientHandler(Socket socket, String playerName, int playerId, ClientManager client) {
         this.socket = socket;
-        this.player = new Player(playerName, playerId, -1); // Create new Player
+        this.player = new Player(playerName, playerId, -1, false); // Create new Player
         this.client = client;
     }
 
@@ -133,10 +129,26 @@ class ClientHandler implements Runnable {
         try {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
-
             Object clientMessage;
             while (true) {
                 try {
+                    // Thread แยกสำหรับการส่งข้อมูล player แบบต่อเนื่อง
+                    new Thread(() -> {
+                        try {
+                            while (!socket.isClosed()) {
+                                out.writeObject(0);  // ส่งรหัสคำสั่ง
+                                out.writeObject(player.getName());  // ส่งข้อมูล player
+                                out.writeObject(player.getId());  // ส่งข้อมูล player
+                                out.writeObject(player.getRoomID());  // ส่งข้อมูล player
+                                out.writeObject(player.isOwner());  // ส่งข้อมูล player
+                                out.flush();
+                                Thread.sleep(1000);  // รอ 1 วินาที
+                            }
+                        } catch (IOException | InterruptedException e) {
+                            System.out.println("Error while sending player data: " + e.getMessage());
+                        }
+                    }).start();
+
                     clientMessage = in.readObject();
                     if (clientMessage instanceof Integer) {
                         int commandId = (Integer) clientMessage;
@@ -215,12 +227,16 @@ class ClientHandler implements Runnable {
         } while (Server.roomPlayers.containsKey(roomID)); // ตรวจสอบจาก Server
     
         player.setOwner(true);
-        player.setRoomID(roomID);
+        player.setRoomID(roomID); // ตรวจสอบให้แน่ใจว่าตั้งค่า roomID ให้กับ player
         System.out.println("Room ID: " + roomID);
     
         return roomID;
     }
     
+    public Player getPlayerObject()
+    {
+        return this.player;
+    }
 
     public void createRoom() {
         int newRoomID = setRoom(); // No arguments needed
@@ -233,9 +249,6 @@ class ClientHandler implements Runnable {
         sendMessage("RoomCreated: " + newRoomID);
         Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
         Server.sendJoinRoom(newRoomID, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
-    
-        // Debug print
-        System.out.println("Current rooms: " + Server.roomPlayers.keySet()); // เพิ่มบรรทัดนี้เพื่อดูห้องที่มีอยู่
     }
     
     
@@ -255,16 +268,10 @@ class ClientHandler implements Runnable {
         return true; // คืนค่าประสบความสำเร็จ
     }
     
-    
-    
     public boolean roomExists(int roomNumber) {
         return Server.roomPlayers.containsKey(roomNumber);
     }
     
-    public Player getPlayer() {
-        return player; // Method to access the Player
-    }
-
     public void changeName(String newName) {
         String oldName = player.getName(); // เก็บชื่อเดิม
         player.changeName(newName); // เรียก method changeName ใน class Player เพื่ออัพเดตชื่อ
@@ -277,4 +284,8 @@ class ClientHandler implements Runnable {
         sendMessage("Your name has been changed to " + newName);
     }
     
+    public Player getPlayer()
+    {
+        return this.player;
+    } 
 }

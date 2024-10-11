@@ -135,9 +135,6 @@ class menuFrame extends JFrame{
             }
         });
         
-        
-        
-        
         btnHowtoplay.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -152,10 +149,10 @@ class menuFrame extends JFrame{
                 String name = JOptionPane.showInputDialog("Enter Your Name");
                 if (name != null && !name.isEmpty()) {
                     setVisible(false);
+                    client.changeName(name, 0);
                     CreateRoomFrame roomFrame = new CreateRoomFrame(client);
                     //roomFrame.setTextForEmpty(0, name); // เรียกใช้ทันทีเมื่อเปิด CreateRoomFrame
                     roomFrame.setVisible(true);
-                    client.changeName(name, 0);
                 } else {
                     JOptionPane.showMessageDialog(null, "Please enter your name to continue.");
                 }
@@ -179,12 +176,14 @@ class menuFrame extends JFrame{
 }
 class CreateRoomFrame extends JFrame {
     private JLabel[] emptyLabels;
+    private ClientManager client;
     public String[] labelText = {"Player 1: empty", "Player 2: empty", "Player 3: empty", "Player 4: empty"};
     
     JPanel panelcenter = new JPanel();
+    JLabel roomIdLabel = new JLabel("Room ID: 123456");
 
     CreateRoomFrame(ClientManager client) {
-
+        this.client = client;
         // รับค่าขนาดหน้าจอ
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setSize(screenSize.width, screenSize.height);
@@ -201,7 +200,7 @@ class CreateRoomFrame extends JFrame {
         panelcenter.setLayout(new GridBagLayout());
 
         // ====================== สร้าง JLabel สำหรับแสดง Room ID ======================
-        JLabel roomIdLabel = new JLabel("Room ID: 123");
+        
         roomIdLabel.setFont(new Font("Arial", Font.BOLD, 24));
         roomIdLabel.setForeground(Color.BLACK);
         roomIdLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -260,37 +259,38 @@ class CreateRoomFrame extends JFrame {
         });
 
         bgframe.add(panelcenter); // เพิ่ม panelcenter ลงใน bgframe
+        
+        updateLb updater = new updateLb(client, this); // ส่งอ้างอิง CreateRoomFrame
+        Thread updateThread = new Thread(updater);
+        updateThread.start(); // เริ่ม Thread สำหรับอัปเดต UI
 
     }
 
     // ============================ เมธอดตั้งค่าข้อความสำหรับ empty ============================
-    public void setTextForEmpty(int index, String text) {
-        System.out.println("Setting text for index: " + index + ", text: " + text);
+    public void setNameInRoom(int index, String text) {
+        //System.out.println("Setting text for index: " + index + ", text: " + text);
     
         if (index >= 0 && index < emptyLabels.length) {
             this.labelText[index] = text;
             SwingUtilities.invokeLater(() -> {
                 emptyLabels[index].setText(text);
                 
-                System.out.println("อัพเดทใน for empty: " + index + " to: " + text); // ตรวจสอบการอัปเดต
+                //System.out.println("อัพเดทใน for empty: " + index + " to: " + text); // ตรวจสอบการอัปเดต
             });
         } else {
             System.out.println("Index out of bounds: " + index);
         }
     }
 
+    public void setRoomNumber(int rid)
+    {
+        roomIdLabel.setText("ROOM ID: "+String.valueOf(rid));
+    }
+
     // Method สำหรับการ repaint CreateRoomFrame
     public void repaintRoomFrame() {
         panelcenter.revalidate(); // Re-layout the components
         panelcenter.repaint();    // Repaint the panel
-    }
-
-    // ============================ เมธอดสำหรับการดึงชื่อ ============================
-    public String getStringName(int id) {
-        if (id >= 0 && id < labelText.length) {
-            return labelText[id];
-        }
-        return null; // คืนค่า null ถ้า id นอกขอบเขต
     }
 
     /* ============================ setBackground ที่ดึงภาพมา =========================== */
@@ -310,48 +310,53 @@ class CreateRoomFrame extends JFrame {
         }
     }
 }
-class updateLb implements Runnable {
-    private String[] playerName = new String[4]; // กำหนดขนาดอาร์เรย์
-    private CreateRoomFrame createRoomFrame; // รับ CreateRoomFrame
-    private volatile boolean running = true; // ตัวแปรควบคุมการทำงานของ Thread
-    private ClientManager client;
-    // Constructor ที่รับ CreateRoomFrame
-    updateLb(ClientManager client) {
-        this.client = client;
 
-        // กำหนดค่าเริ่มต้นให้กับ playerName
+
+class updateLb implements Runnable {
+    private String[] playerName = new String[4]; 
+    private CreateRoomFrame crf; 
+    private volatile boolean running = true; 
+    private ClientManager client;
+
+    updateLb(ClientManager client, CreateRoomFrame crf) {
+        this.client = client;
+        this.crf = crf; // เก็บอ้างอิง CreateRoomFrame
+        // กำหนดชื่อเริ่มต้น
         for (int i = 0; i < playerName.length; i++) {
-            playerName[i] = "Player " + (i + 1) + ": empty5555"; // ตั้งค่าชื่อผู้เล่น
+            playerName[i] = "Player " + (i + 1) + ": empty"; 
         }
     }
 
     @Override
     public void run() {
         while (running) {
+            // อัปเดตชื่อผู้เล่นใน CreateRoomFrame
             for (int i = 0; i < playerName.length; i++) {
-                createRoomFrame.setTextForEmpty(i, playerName[i]); // อัปเดตข้อความ
-                System.out.println("อัพเดทใน thread: " + playerName[i]);
+                crf.setNameInRoom(i, playerName[i]); // อัปเดตชื่อผู้เล่นในห้อง
             }
 
             try {
-                Thread.sleep(1000); // หยุดการทำงานของ thread เป็นเวลา 1000 มิลลิวินาที (1 วินาที)
+                Thread.sleep(1000); 
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // ตั้งค่า interrupt flag
+                Thread.currentThread().interrupt(); 
                 e.printStackTrace();
             }
         }
     }
 
-    // Method สำหรับการหยุด Thread
     public void stop() {
-        running = false; // เปลี่ยนตัวแปรควบคุมเป็น false เพื่อหยุด Thread
+        running = false; 
     }
 
     public void setStringName(int id, String name) {
         if (id >= 0 && id < playerName.length) {
-            playerName[id] = name; // อัปเดตชื่อผู้เล่น
-            System.out.println("อัพเดทใน setString thread: " + playerName[id]);
+            playerName[id] = name; 
+            System.out.println("Updated in setString thread: " + playerName[id]);
         }
+    }
+
+    public void updatePlayer(int playerId, String playerName) {
+        setStringName(playerId, playerName); // อัปเดตชื่อผู้เล่นในอาเรย์
     }
 }
 

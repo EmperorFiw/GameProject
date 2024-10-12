@@ -253,6 +253,7 @@ class CreateRoomFrame extends JFrame {
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                client.leaveRoom();
                 menuFrame mf = new menuFrame(client);
                 mf.setVisible(true);
             }
@@ -331,23 +332,12 @@ class updateLb implements Runnable {
     @Override
     public void run() {
         while (running) {
-            // สมมติว่า player.getId() คืนค่า id ของผู้เล่น
-            int playerId = player.getId(); // ดึงค่า id ของ player
             crf.setRoomNumber(player.getRoomID()); 
 
             for (int i=0;i<4;i++)
             {
-                //System.out.println(i+"         "+player.getPlayerInRoomFromIndex(i));
                 crf.setNameInRoom(i, playerName[i] + player.getPlayerInRoomFromIndex(i)); 
             }
-            /*  if (playerId >= 0 && playerId < 4) { // ตรวจสอบว่า id อยู่ในช่วง 0 ถึง 3
-                    crf.setNameInRoom(playerId, "Player " +": "+player.getAllPlayerInRoom(playerId)); 
-                    
-                } else if (playerId >= 4) {
-                    // ถ้า playerId มากกว่า 3 ให้ทำการอัปเดตตามที่คุณต้องการ เช่น:
-                    crf.setNameInRoom(playerId - 4, player.getAllPlayerInRoom(playerId)); 
-                    crf.setRoomNumber(player.getRoomID()); 
-                }*/
 
             try {
                 Thread.sleep(1000); 

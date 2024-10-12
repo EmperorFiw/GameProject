@@ -84,7 +84,7 @@ class ClientManager {
                                     this.player.setRoomID(roomid);
                                     this.player.setOwner(isOwner);
                                     this.player.addInNameRoom(ind, addName);
-
+                                    System.out.println(addName);
                                     break;
                                 case 1: // จัดเก็บรายชื่อในห้อง
                                     try {
@@ -189,4 +189,14 @@ class ClientManager {
         return this.player;
     }
 
+    public void leaveRoom()
+    {
+        try {
+            out.writeObject(99);
+            out.writeObject(this.player);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
+        }
+    }
 }

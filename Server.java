@@ -80,7 +80,7 @@ public class Server {
         clients.removeIf(client -> client.getPlayer().getId() == player.getId());
         if (clients.removeIf(client -> client.getPlayer().getRoomID() != -1))
         {
-            removeNameInRoom(player);
+            updatePlayerInRoomByIndex(player, player.getName());
         }
         System.out.println(player.getName() + " has been removed from the server.");
     }
@@ -156,7 +156,6 @@ public class Server {
     }
     
 
-
     public static List<Integer> getRoomIDsOfAllPlayers() {
         List<Integer> roomIDs = new ArrayList<>();
         synchronized (clients) {
@@ -195,33 +194,35 @@ public class Server {
         return roomPlayerCount; // คืนค่า Map ที่เก็บจำนวนผู้เล่นในแต่ละห้อง
     }
     
-    public static void removeNameInRoom(Player player) {
-        int roomID = player.getRoomID(); // ดึง ID ของห้องที่ผู้เล่นอยู่
+
     
-        // ตรวจสอบว่าห้องนี้มีผู้เล่นอยู่หรือไม่
-        synchronized (roomPlayers) {
-            List<String> playersInRoom = roomPlayers.get(roomID);
-            if (playersInRoom != null) {
-                // ลบชื่อผู้เล่นออกจากรายชื่อในห้อง
-                playersInRoom.remove(player.getName()); 
+
+    public static void updatePlayerInRoomByIndex(Player player, String name) {
+        // ดึงรายชื่อผู้เล่นทั้งหมดในห้อง
+        List<String> playersInRoom = roomPlayers.get(player.getRoomID());
         
-                // อัปเดตช่องของผู้เล่นที่ออกให้เป็น "Empty"
-                int index = playersInRoom.indexOf(player.getName()); // ดึงดัชนีของผู้เล่นที่ออก
-                // ส่งข้อมูลให้ผู้เล่นทุกคนในห้อง
+        if (playersInRoom != null) {
+            // ค้นหาตำแหน่งของผู้เล่นในลิสต์
+            int index = playersInRoom.indexOf(name);
+            if (index != -1) {
+                // แทนที่ชื่อผู้เล่นด้วย "Empty"
+                playersInRoom.set(index, "Empty");
+                
+                // ส่งข้อมูลไปยัง client
                 for (ClientHandler clientHandler : clients) {
-                    if (clientHandler.getPlayer().getRoomID() == roomID) {
-                        // อัปเดตรายชื่อผู้เล่นใน ClientHandler
-                        player.addInNameRoom(index, "Empty"); // เปลี่ยนตำแหน่งที่ถูกดึงออกเป็น "Empty"
-                        clientHandler.sendMessage(player.getName() + " has left the room.");
+                    if (clientHandler.getPlayer().getRoomID() == player.getRoomID()) {
+                        clientHandler.sendRoomData(index, "Empty");  // ส่งข้อมูลอัปเดตให้ client
                     }
                 }
-        
-                // แสดงรายชื่อผู้เล่นที่เหลือในห้อง
-                System.out.println("Updated player list in room " + roomID + ": " + playersInRoom);
+    
+                System.out.println("Player " + name + " removed from room.");
+            } else {
+                System.out.println("Player " + name + " not found in room.");
             }
         }
-        
     }
+    
+    
 
     public static boolean isRoomFull(int rid) {
         synchronized (roomPlayers) {
@@ -277,7 +278,6 @@ class ClientHandler implements Runnable {
                                     out.writeObject(player.getPlayerInRoomFromIndex(i));
                                     out.flush();
                                     i++;
-
                                 }
                                 
                                 Thread.sleep(1000);  // รอ 1 วินาที
@@ -335,14 +335,19 @@ class ClientHandler implements Runnable {
                                 out.writeObject(checkRoomNumber);
                                 out.flush();
                                 break;
-                            
+                            case 99:
+                            {
+                                Player cplayer = (Player) in.readObject();//client.getPlayerData();
+                                Server.updatePlayerInRoomByIndex(cplayer, cplayer.getName());
+                                break;
+                            }
                             default:
                                 System.out.println("Unknown command ID: " + commandId);
                         }
                     }
                 } catch (SocketException e) {
                     System.out.println(player.getName() + " has disconnected (Connection reset).");
-                    Server.removeNameInRoom(player);
+                    
                     Server.removePlayer(player);
                     break;
                 } catch (EOFException eof) {
@@ -385,6 +390,8 @@ class ClientHandler implements Runnable {
                 out.writeObject(index);
                 out.writeObject(name);
                 out.flush();
+
+
              } catch (IOException e) {
                 e.printStackTrace();
             }

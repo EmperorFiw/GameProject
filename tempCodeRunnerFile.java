@@ -1,1 +1,1 @@
-updatePlayerInRoom
+getPlayerInRoomFromIndex

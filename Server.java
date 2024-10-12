@@ -1,3 +1,4 @@
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -138,12 +139,15 @@ class ClientHandler implements Runnable {
                     new Thread(() -> {
                         try {
                             while (!socket.isClosed()) {
-                                out.writeObject(0);  // ส่งรหัสคำสั่ง
-                                out.writeObject(player.getName());  // ส่งข้อมูล player
-                                out.writeObject(player.getId());  // ส่งข้อมูล player
-                                out.writeObject(player.getRoomID());  // ส่งข้อมูล player
-                                out.writeObject(player.isOwner());  // ส่งข้อมูล player
-                                out.flush();
+                                synchronized(out) {
+                                    out.writeObject(0);
+                                    out.writeObject(player.getName());
+                                    out.writeObject(player.getId());
+                                    out.writeObject(player.getRoomID());
+                                    out.writeObject(player.isOwner());
+                                    out.flush();
+                                }
+                                
                                 Thread.sleep(1000);  // รอ 1 วินาที
                             }
                         } catch (IOException | InterruptedException e) {
@@ -193,9 +197,12 @@ class ClientHandler implements Runnable {
                     System.out.println(player.getName() + " has disconnected (Connection reset).");
                     Server.removePlayer(player);
                     break;
-                } catch (IOException | ClassNotFoundException e) {
-                    System.out.println("Error: " + e.getMessage());
+                } catch (EOFException eof) {
+                    System.out.println(player.getName() + " Client disconnected or reached end of file.");
+                    Server.removePlayer(player);
                     break;
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
             }
 

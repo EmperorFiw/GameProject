@@ -56,7 +56,7 @@ class ClientManager {
             in = new ObjectInputStream(socket.getInputStream());
 
             // สร้าง Player ใหม่เมื่อเชื่อมต่อ
-            player = new Player("Player", -1, -1, false);
+            player = new Player("Player", 0, -1, false);
 
             new Thread(() -> {
                 try {
@@ -74,20 +74,20 @@ class ClientManager {
                                     String name = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
                                     int playerId = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
                                     int roomid = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    Boolean isOwner = (Boolean) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                
+                                    boolean isOwner = (boolean) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+
                                     this.player.changeName(name);
                                     this.player.setId(playerId);
                                     this.player.setRoomID(roomid);
                                     this.player.setOwner(isOwner);
 
                                     break;
-                                case 1: //จัดเก็บรายชื่อในห้อง
-                                    int index = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    String pName = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    System.out.println("Get name");
-                                    this.player.addInNameRoom(index, pName);
-                                    break;
+                                // case 1: //จัดเก็บรายชื่อในห้อง
+                                //     int index = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                //     String pName = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                //     System.out.println("Get name");
+                                //     this.player.addInNameRoom(index, pName);
+                                //     break;
                                 case 3: // create room
                                     boolean canJoin = (Boolean) in.readObject();
                                     int rid = (Integer) in.readObject();
@@ -104,6 +104,9 @@ class ClientManager {
                                         JOptionPane.showMessageDialog(null, "Room does not exist. Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
                                         mf.roomNotFound();
                                     }
+                                    break;
+                                default:
+                                    System.out.println("Unknow command");
                                     break;
                             }
                         }
@@ -140,17 +143,17 @@ class ClientManager {
     
     public void changeName(String name, int type) {
         try {
-            out.writeObject(2); // ส่งคำสั่ง ID 2 สำหรับการเปลี่ยนชื่อ
-            if (type == 0)
-            {
-                out.writeObject(0);
-            } 
-            else
-            {
-                out.writeObject(1); 
+            synchronized(out) {
+                out.writeObject(2);  // ส่งคำสั่ง ID 2 สำหรับการเปลี่ยนชื่อ
+                if (type == 0) {
+                    out.writeObject(0);
+                } else {
+                    out.writeObject(1);
+                }
+                out.writeObject(name);  // ส่งชื่อใหม่ที่ต้องการเปลี่ยน
+                out.flush();
             }
-            out.writeObject(name); // ส่งชื่อใหม่ที่ต้องการเปลี่ยน
-            out.flush();
+            
         } catch (IOException e) {
             e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
         }
@@ -158,6 +161,7 @@ class ClientManager {
     
     public boolean joinRoom(int rid) {
         try {
+            out.writeObject(1); 
             out.writeObject(rid); // ส่งหมายเลขห้องไปยังเซิร์ฟเวอร์
             out.flush();
     

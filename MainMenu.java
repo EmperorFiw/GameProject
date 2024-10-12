@@ -333,12 +333,13 @@ class updateLb implements Runnable {
         while (running) {
             // สมมติว่า player.getId() คืนค่า id ของผู้เล่น
             int playerId = player.getId(); // ดึงค่า id ของ player
+            //crf.setRoomNumber(player.getRoomID()); 
 
             /*for (int i=0;i<4;i++)
             {
                 if (playerId >= 0 && playerId < 4) { // ตรวจสอบว่า id อยู่ในช่วง 0 ถึง 3
                     crf.setNameInRoom(playerId, "Player "+ i++ +": "+player.getAllPlayerInRoom(playerId)); 
-                    crf.setRoomNumber(player.getRoomID()); 
+                    
                 } else if (playerId >= 4) {
                     // ถ้า playerId มากกว่า 3 ให้ทำการอัปเดตตามที่คุณต้องการ เช่น:
                     crf.setNameInRoom(playerId - 4, player.getAllPlayerInRoom(playerId)); 

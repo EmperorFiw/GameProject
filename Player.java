@@ -56,19 +56,18 @@ public class Player implements Serializable {
         this.id = id;
     }
 
-    public String getAllPlayerInRoom(int index)
+    public String getPlayerInRoomFromIndex(int index)
     {
         return this.allPlayerInRoom[index];
     }
 
-    public void addInNameRoom(int index, String name)
+   public void addInNameRoom(int index, String name)
     {
         if (index < 4)
             this.allPlayerInRoom[index] = name;
         else
             this.allPlayerInRoom[index-4] = name;
-
-    }
+    } 
     @Override
     public String toString() {
         return "Player{name='" + name + "', id=" + id + ", roomID=" + roomID + ", isOwner=" + isOwner + "}";

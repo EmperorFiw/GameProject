@@ -78,6 +78,10 @@ public class Server {
             player.setOwner(false);
         }
         clients.removeIf(client -> client.getPlayer().getId() == player.getId());
+        if (clients.removeIf(client -> client.getPlayer().getRoomID() != -1))
+        {
+            removeNameInRoom(player);
+        }
         System.out.println(player.getName() + " has been removed from the server.");
     }
 
@@ -103,10 +107,130 @@ public class Server {
         }
     }
 
-    public static void sendJoinRoom(int rid, int playerid, String playerName) {
+    public static void sendJoinRoom(Player player, int rid, int playerid, String playerName) {
         System.out.println("Player " + playerName + " with ID " + playerid + " joined room " + rid);
+    
+        // เพิ่มชื่อผู้เล่นใหม่ลงใน roomPlayers
+        synchronized (roomPlayers) {
+            roomPlayers.putIfAbsent(rid, new ArrayList<>()); // ตรวจสอบให้แน่ใจว่าห้องนั้นถูกสร้างขึ้นแล้ว
+            if (!roomPlayers.get(rid).contains(playerName)) {
+                roomPlayers.get(rid).add(playerName); // เพิ่มชื่อผู้เล่นในห้อง
+                System.out.println(playerName + " added to room " + rid);
+                updatePlayerInRoom(player, playerName, rid); // เรียกใช้ updatePlayerInRoom
+            } else {
+                System.out.println(playerName + " already in room " + rid);
+            }
+        }
+    
+        // แสดงจำนวนผู้เล่นในแต่ละห้อง
+        Map<Integer, Integer> roomCounts = Server.countPlayersInRooms();
+        for (Map.Entry<Integer, Integer> entry : roomCounts.entrySet()) {
+            System.out.println("Room ID: " + entry.getKey() + ", Player Count: " + entry.getValue());
+        }
+    
         // ปิดหน้าเมนู
         mn.showMainMenu(false, client);
+    }
+    
+    public static void updatePlayerInRoom(Player player, String name, int rid) {
+        // วนลูปผ่าน clients
+        for (ClientHandler clientHandler : clients) {
+            if (clientHandler.getPlayer().getRoomID() == rid) {
+                // ดึงรายชื่อผู้เล่นทั้งหมดในห้อง
+                List<String> playersInRoom = roomPlayers.get(rid); 
+                
+                if (playersInRoom != null) {
+                    // แสดงชื่อผู้เล่นทั้งหมดในห้อง
+                    for (int i = 0; i < playersInRoom.size(); i++) {
+                        String playerName = playersInRoom.get(i);
+                        System.out.println("Player in room " + rid + ": " + playerName);
+                        clientHandler.sendRoomData(i, playerName);
+                        
+                        player.addInNameRoom(i, playerName); // ใช้ playerName แทน player.getName()
+                    }
+                } else {
+                    System.out.println("No players in room " + rid);
+                }
+            }
+        }
+    }
+    
+
+
+    public static List<Integer> getRoomIDsOfAllPlayers() {
+        List<Integer> roomIDs = new ArrayList<>();
+        synchronized (clients) {
+            for (ClientHandler client : clients) {
+                Player player = client.getPlayer(); // ดึง Player object
+                int roomID = player.getRoomID(); // ดึง roomID ของผู้เล่น
+                if (!roomIDs.contains(roomID)) { // ตรวจสอบว่า roomID ยังไม่มีในลิสต์หรือไม่
+                    roomIDs.add(roomID); // เพิ่ม roomID ลงในลิสต์
+                }
+            }
+        }
+        return roomIDs; // คืนค่าลิสต์ของ roomID
+    }
+
+    public static Map<Integer, Integer> countPlayersInRooms() {
+        Map<Integer, Integer> roomPlayerCount = new HashMap<>();
+        
+        // ดึงหมายเลขห้องของผู้เล่นทั้งหมด
+        List<Integer> allRoomIDs = getRoomIDsOfAllPlayers();
+        
+        synchronized (clients) {
+            for (Integer roomID : allRoomIDs) {
+                int count = 0;
+    
+                // วนลูปผู้เล่นใน clients
+                for (ClientHandler client : clients) {
+                    Player player = client.getPlayer(); // ดึงข้อมูลผู้เล่นจาก ClientHandler
+                    if (player.getRoomID() == roomID) {
+                        count++; // เพิ่มจำนวนผู้เล่นในห้องนี้
+                    }
+                }
+    
+                roomPlayerCount.put(roomID, count); // บันทึกจำนวนผู้เล่นในห้องนั้นลงใน Map
+            }
+        }
+        return roomPlayerCount; // คืนค่า Map ที่เก็บจำนวนผู้เล่นในแต่ละห้อง
+    }
+    
+    public static void removeNameInRoom(Player player) {
+        int roomID = player.getRoomID(); // ดึง ID ของห้องที่ผู้เล่นอยู่
+    
+        // ตรวจสอบว่าห้องนี้มีผู้เล่นอยู่หรือไม่
+        synchronized (roomPlayers) {
+            List<String> playersInRoom = roomPlayers.get(roomID);
+            if (playersInRoom != null) {
+                // ลบชื่อผู้เล่นออกจากรายชื่อในห้อง
+                playersInRoom.remove(player.getName()); 
+        
+                // อัปเดตช่องของผู้เล่นที่ออกให้เป็น "Empty"
+                int index = playersInRoom.indexOf(player.getName()); // ดึงดัชนีของผู้เล่นที่ออก
+                // ส่งข้อมูลให้ผู้เล่นทุกคนในห้อง
+                for (ClientHandler clientHandler : clients) {
+                    if (clientHandler.getPlayer().getRoomID() == roomID) {
+                        // อัปเดตรายชื่อผู้เล่นใน ClientHandler
+                        player.addInNameRoom(index, "Empty"); // เปลี่ยนตำแหน่งที่ถูกดึงออกเป็น "Empty"
+                        clientHandler.sendMessage(player.getName() + " has left the room.");
+                    }
+                }
+        
+                // แสดงรายชื่อผู้เล่นที่เหลือในห้อง
+                System.out.println("Updated player list in room " + roomID + ": " + playersInRoom);
+            }
+        }
+        
+    }
+
+    public static boolean isRoomFull(int rid) {
+        synchronized (roomPlayers) {
+            List<String> playersInRoom = roomPlayers.get(rid);
+            if (playersInRoom != null) {
+                return playersInRoom.size() >= 4;
+            }
+        }
+        return false; 
     }
     
     
@@ -138,14 +262,22 @@ class ClientHandler implements Runnable {
                     // Thread แยกสำหรับการส่งข้อมูล player แบบต่อเนื่อง
                     new Thread(() -> {
                         try {
+                            int i=0;
                             while (!socket.isClosed()) {
                                 synchronized(out) {
+                                    if (i == 4)
+                                        i = 0;
+
                                     out.writeObject(0);
                                     out.writeObject(player.getName());
                                     out.writeObject(player.getId());
                                     out.writeObject(player.getRoomID());
                                     out.writeObject(player.isOwner());
+                                    out.writeObject(i);
+                                    out.writeObject(player.getPlayerInRoomFromIndex(i));
                                     out.flush();
+                                    i++;
+
                                 }
                                 
                                 Thread.sleep(1000);  // รอ 1 วินาที
@@ -174,8 +306,8 @@ class ClientHandler implements Runnable {
                                 String newName = (String) in.readObject(); // Get the new name from the client
                             
                                 if (commandType == 0) {
-                                    createRoom();
                                     changeName(newName); 
+                                    createRoom();
 
                                 } else if (commandType == 1) {
                                     changeName(newName); 
@@ -183,8 +315,23 @@ class ClientHandler implements Runnable {
                                 break;
                             case 3:
                                 int checkRoomNumber = (int) in.readObject();
+                                
                                 out.writeObject(3);
-                                out.writeObject(Server.roomPlayers.containsKey(checkRoomNumber));
+                                if (Server.roomPlayers.containsKey(checkRoomNumber))
+                                {
+                                    if (Server.isRoomFull(checkRoomNumber))
+                                    {
+                                        out.writeObject(false);
+                                    }
+                                    else
+                                    {
+                                        out.writeObject(true);
+                                    }
+                                }
+                                else
+                                {
+                                    out.writeObject(false);
+                                }
                                 out.writeObject(checkRoomNumber);
                                 out.flush();
                                 break;
@@ -195,6 +342,7 @@ class ClientHandler implements Runnable {
                     }
                 } catch (SocketException e) {
                     System.out.println(player.getName() + " has disconnected (Connection reset).");
+                    Server.removeNameInRoom(player);
                     Server.removePlayer(player);
                     break;
                 } catch (EOFException eof) {
@@ -229,6 +377,20 @@ class ClientHandler implements Runnable {
         }
     }
 
+    public void sendRoomData(int index, Serializable name) {
+        if (out != null) {
+            try {
+                player.addInNameRoom(index, (String)name);
+                out.writeObject(1);
+                out.writeObject(index);
+                out.writeObject(name);
+                out.flush();
+             } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
     public int setRoom() {
         int roomID;
         do {
@@ -253,29 +415,31 @@ class ClientHandler implements Runnable {
     
         // Update player list in the room
         Server.roomPlayers.putIfAbsent(newRoomID, new ArrayList<>()); // Access roomPlayers via Server
-        Server.roomPlayers.get(newRoomID).add(player.getName());
+        //Server.roomPlayers.get(newRoomID).add(player.getName());
     
         sendMessage("RoomCreated: " + newRoomID);
         Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
-        Server.sendJoinRoom(newRoomID, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
+        Server.sendJoinRoom(player, newRoomID, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
     }
     
     
     
     public boolean joinRoom(int roomNumber) {
+        if (Server.isRoomFull(roomNumber)) { // ตรวจสอบห้องว่าเต็มแล้วหรือยัง
+            sendMessage("Room is full, cannot join.");
+            return false; // คืนค่าหากห้องเต็ม
+        }
+    
         player.setRoomID(roomNumber);
-        
-        // Update player list in the room
         Server.roomPlayers.putIfAbsent(roomNumber, new ArrayList<>());
-        Server.roomPlayers.get(roomNumber).add(player.getName());
-        
+    
         sendMessage("RoomExists: " + roomNumber);
         Server.sendClientMessage(roomNumber, player.getName() + " has joined the room " + roomNumber);
-        
-        Server.sendJoinRoom(roomNumber, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
+        Server.sendJoinRoom(player, roomNumber, player.getId(), player.getName());
         
         return true; // คืนค่าประสบความสำเร็จ
     }
+    
     
     public boolean roomExists(int roomNumber) {
         return Server.roomPlayers.containsKey(roomNumber);
@@ -287,8 +451,7 @@ class ClientHandler implements Runnable {
     
         // ส่งข้อความให้ทุกคนในห้องว่าผู้เล่นได้เปลี่ยนชื่อ
         int roomID = player.getRoomID();
-        Server.sendClientMessage(roomID, oldName + " has changed their name to " + newName);
-        
+
         // แจ้งผู้เล่นเอง
         sendMessage("Your name has been changed to " + newName);
     }
@@ -297,4 +460,5 @@ class ClientHandler implements Runnable {
     {
         return this.player;
     } 
+    
 }

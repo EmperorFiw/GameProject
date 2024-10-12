@@ -64,7 +64,8 @@ class ClientManager {
                     while ((messageFromServer = in.readObject()) != null) {
                         if (messageFromServer instanceof String) {
                             String message = (String) messageFromServer;
-                            System.out.println(message);
+                            if (!"Empty".equals(message))
+                                System.out.println(message);
     
                         } else if (messageFromServer instanceof Integer) {
                             int commandId = (Integer) messageFromServer;
@@ -75,22 +76,35 @@ class ClientManager {
                                     int playerId = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
                                     int roomid = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
                                     boolean isOwner = (boolean) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-
+                                    int ind = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
+                                    String addName = (String) in.readObject();
+                                    
                                     this.player.changeName(name);
                                     this.player.setId(playerId);
                                     this.player.setRoomID(roomid);
                                     this.player.setOwner(isOwner);
+                                    this.player.addInNameRoom(ind, addName);
 
                                     break;
-                                // case 1: //จัดเก็บรายชื่อในห้อง
-                                //     int index = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                //     String pName = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                //     System.out.println("Get name");
-                                //     this.player.addInNameRoom(index, pName);
-                                //     break;
+                                case 1: // จัดเก็บรายชื่อในห้อง
+                                    try {
+                                        Integer index = (Integer) in.readObject(); // รับตำแหน่งผู้เล่น
+                                        String pName = (String) in.readObject(); // รับชื่อผู้เล่น
+                                        
+                                        this.player.addInNameRoom(index, pName); // เพิ่มชื่อผู้เล่นในห้อง
+                                    } catch (ClassNotFoundException e) {
+                                        e.printStackTrace();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    break;
+                                
+                                
+                                
                                 case 3: // create room
                                     boolean canJoin = (Boolean) in.readObject();
                                     int rid = (Integer) in.readObject();
+                                    System.out.println("can join "+canJoin+rid);
                                     if (canJoin)
                                     {
                                         out.writeObject(1);
@@ -101,7 +115,7 @@ class ClientManager {
                                     }
                                     else
                                     {
-                                        JOptionPane.showMessageDialog(null, "Room does not exist. Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
+                                        JOptionPane.showMessageDialog(null, "Room does not exist or room is full!.", "Error", JOptionPane.ERROR_MESSAGE);
                                         mf.roomNotFound();
                                     }
                                     break;
@@ -114,6 +128,7 @@ class ClientManager {
                 } catch (SocketException e) {
                     System.out.println("Connection was reset: " + e.getMessage());
                     closeConnection();
+                    System.exit(0);
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                     closeConnection(); // ปิดการเชื่อมต่อเมื่อเกิดข้อผิดพลาด
@@ -159,19 +174,6 @@ class ClientManager {
         }
     }
     
-    public boolean joinRoom(int rid) {
-        try {
-            out.writeObject(1); 
-            out.writeObject(rid); // ส่งหมายเลขห้องไปยังเซิร์ฟเวอร์
-            out.flush();
-    
-            return (boolean) in.readObject(); // รับค่าจากเซิร์ฟเวอร์
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
-            return false; // ถ้าเกิดข้อผิดพลาดให้คืนค่า false
-        }
-    }
-
     public void isRoomExist(int roomNumber) {
         try {
             out.writeObject(3);

@@ -265,13 +265,13 @@ class CreateRoomFrame extends JFrame {
                     {
                         if (player.getPlayerInRoomFromIndex(i).equals("Empty"))
                         {
-                            //JOptionPane.showMessageDialog(null,"Cannot start the game. The room is not full with 4 players.", "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(null,"Cannot start the game. The room is not full with 4 players.", "Error", JOptionPane.ERROR_MESSAGE);
                             break;
                         }
                         countPlayer++ ;
                     }
                     
-                    if (countPlayer < 4)
+                    if (countPlayer == 4)
                     {
                         client.startGame(CreateRoomFrame.this, player.getRoomID());
                     }

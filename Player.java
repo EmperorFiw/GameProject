@@ -62,12 +62,10 @@ public class Player implements Serializable {
     }
 
     public void addInNameRoom(int index, String name) {
-        // กำหนด index ที่แท้จริง หาก index มากกว่า 3 ให้ลบออกด้วย 4
         int actualIndex = index < 4 ? index : index - 4;
-    
-        // เช็คว่าช่องว่างหรือไม่ก่อนทำการเพิ่มชื่อ
+        
         if (this.allPlayerInRoom[actualIndex].equals("Empty")) {
-            this.allPlayerInRoom[actualIndex] = name; // ถ้าว่างอยู่ให้เพิ่มชื่อใหม่
+            this.allPlayerInRoom[actualIndex] = name; 
         } else {
             this.allPlayerInRoom[actualIndex] = name;
         }

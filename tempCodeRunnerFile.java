@@ -1,1 +1,1 @@
-getPlayerInRoomFromIndex
+startG

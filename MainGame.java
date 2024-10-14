@@ -24,10 +24,10 @@ public class MainGame {
         client.connectToServer();
 
         menuFrame mf = new menuFrame(client);  // สร้าง menuFrame
-        client.setMenuFrame(mf);
-        
+        client.setFrameObject(mf);
         MainMenu menu = new MainMenu();
         menu.showMainMenu(true, client);
+        
 
     }
 }
@@ -40,7 +40,7 @@ class ClientManager {
     private Socket socket;
     private Player player; // เพิ่มตัวแปร Player
 
-    public void setMenuFrame(menuFrame mf) {
+    public void setFrameObject(menuFrame mf) {
         this.mf = mf;
     }
 
@@ -84,7 +84,6 @@ class ClientManager {
                                     this.player.setRoomID(roomid);
                                     this.player.setOwner(isOwner);
                                     this.player.addInNameRoom(ind, addName);
-                                    System.out.println(addName);
                                     break;
                                 case 1: // จัดเก็บรายชื่อในห้อง
                                     try {
@@ -118,6 +117,11 @@ class ClientManager {
                                         JOptionPane.showMessageDialog(null, "Room does not exist or room is full!.", "Error", JOptionPane.ERROR_MESSAGE);
                                         mf.roomNotFound();
                                     }
+                                    break;
+                                case 4: //hide main frame
+                                    int hRid = (Integer) in.readObject();
+                                    if (player.getRoomID() == hRid && player.isOwner() == false)
+                                        mf.disRFrame();
                                     break;
                                 default:
                                     System.out.println("Unknow command");
@@ -181,6 +185,18 @@ class ClientManager {
             out.flush();
         } catch (IOException e) {
             e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
+        }
+    }
+
+    public void startGame(CreateRoomFrame frame, int rid)
+    {
+        frame.setVisible(false);
+        try {
+            out.writeObject(4);
+            out.writeObject(rid);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); 
         }
     }
 

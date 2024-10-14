@@ -206,14 +206,22 @@ public class Server {
             int index = playersInRoom.indexOf(name);
             if (index != -1) {
                 // แทนที่ชื่อผู้เล่นด้วย "Empty"
-                playersInRoom.set(index, "Empty");
+                playersInRoom.remove(index);
                 
                 // ส่งข้อมูลไปยัง client
                 for (ClientHandler clientHandler : clients) {
                     if (clientHandler.getPlayer().getRoomID() == player.getRoomID()) {
-                        clientHandler.sendRoomData(index, "Empty");  // ส่งข้อมูลอัปเดตให้ client
+                        // วนลูปเช็คแต่ละช่องใน allPlayerInRoom
+                        for (int i = 0; i < 4; i++) {
+                            // ตรวจสอบว่าชื่อในช่องนี้ตรงกับ player.getName()
+                            if (player.getPlayerInRoomFromIndex(i).equals(player.getName())) {
+                                // ถ้าตรงกัน ส่งข้อมูล index ที่เจอไปยัง client
+                                clientHandler.sendRoomData(i, "Empty");  // ส่งข้อมูลอัปเดตให้ client
+                            }
+                        }
                     }
                 }
+                
     
                 System.out.println("Player " + name + " removed from room.");
             } else {
@@ -234,6 +242,17 @@ public class Server {
         return false; 
     }
     
+    public static void startGame(int rid)
+    {
+        synchronized (clients) {
+            for (ClientHandler client : clients) {
+                if (client.getPlayer().getRoomID() == rid) {
+                    client.sendMessage("Game Start!!");
+                    client.hideMainFrame(rid);
+                }
+            }
+        }
+    }
     
 
 }
@@ -335,10 +354,16 @@ class ClientHandler implements Runnable {
                                 out.writeObject(checkRoomNumber);
                                 out.flush();
                                 break;
+                            case 4: // start game
+                                int getRid = (int) in.readObject();
+                                Server.startGame(getRid);
+                                break;
                             case 99:
                             {
                                 Player cplayer = (Player) in.readObject();//client.getPlayerData();
                                 Server.updatePlayerInRoomByIndex(cplayer, cplayer.getName());
+                                cplayer.setRoomID(-1);
+                                System.out.println(cplayer.getName()+ " has leave the room.");  
                                 break;
                             }
                             default:
@@ -425,7 +450,7 @@ class ClientHandler implements Runnable {
         //Server.roomPlayers.get(newRoomID).add(player.getName());
     
         sendMessage("RoomCreated: " + newRoomID);
-        Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
+        //Server.sendClientMessageToAll(player.getName() + " has created room " + newRoomID);
         Server.sendJoinRoom(player, newRoomID, player.getId(), player.getName()); // ส่งพารามิเตอร์ครบ
     }
     
@@ -461,6 +486,17 @@ class ClientHandler implements Runnable {
 
         // แจ้งผู้เล่นเอง
         sendMessage("Your name has been changed to " + newName);
+    }
+
+    public void hideMainFrame(int rid)
+    {
+        try {
+            out.writeObject(4);
+            out.writeObject(rid);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); 
+        }
     }
     
     public Player getPlayer()

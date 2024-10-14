@@ -33,6 +33,7 @@ public class MainMenu {
 
 class menuFrame extends JFrame{
     private ClientManager client;
+    private CreateRoomFrame roomFrame; 
 
     menuFrame(ClientManager client) {
         this.client = client;
@@ -150,7 +151,7 @@ class menuFrame extends JFrame{
                 if (name != null && !name.isEmpty()) {
                     setVisible(false);
                     client.changeName(name, 0);
-                    CreateRoomFrame roomFrame = new CreateRoomFrame(client);
+                    roomFrame = new CreateRoomFrame(client);
                     //roomFrame.setTextForEmpty(0, name); // เรียกใช้ทันทีเมื่อเปิด CreateRoomFrame
                     roomFrame.setVisible(true);
                 } else {
@@ -165,13 +166,19 @@ class menuFrame extends JFrame{
         setVisible(false); // ปิดหน้าต่างปัจจุบัน
         revalidate(); // อัปเดตการแสดงผล
         repaint(); // รีเฟรชการแสดงผล
-        CreateRoomFrame roomFrame = new CreateRoomFrame(client);
+        roomFrame = new CreateRoomFrame(client);
         roomFrame.setVisible(true); // แสดงหน้าต่างห้อง
     }
 
     public void roomNotFound()
     {
         setVisible(true); 
+    }
+
+    public void disRFrame()
+    {
+        roomFrame.disposeRFrame();
+        
     }
 }
 class CreateRoomFrame extends JFrame {
@@ -246,6 +253,29 @@ class CreateRoomFrame extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 panelcenter.revalidate();
                 panelcenter.repaint();
+                Player player = client.getPlayerData();
+                if (player.isOwner() == false)
+                {
+                    JOptionPane.showMessageDialog(null,"You are not Owner", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                else
+                {
+                    int countPlayer = 0;
+                    for (int i=0;i<4;i++)
+                    {
+                        if (player.getPlayerInRoomFromIndex(i).equals("Empty"))
+                        {
+                            //JOptionPane.showMessageDialog(null,"Cannot start the game. The room is not full with 4 players.", "Error", JOptionPane.ERROR_MESSAGE);
+                            break;
+                        }
+                        countPlayer++ ;
+                    }
+                    
+                    if (countPlayer < 4)
+                    {
+                        client.startGame(CreateRoomFrame.this, player.getRoomID());
+                    }
+                }
             }
         });
 
@@ -294,6 +324,10 @@ class CreateRoomFrame extends JFrame {
         panelcenter.repaint();    // Repaint the panel
     }
 
+    public void disposeRFrame()
+    {
+        setVisible(false);
+    }
     /* ============================ setBackground ที่ดึงภาพมา =========================== */
 
     // คลาสสำหรับพื้นหลัง

@@ -72,16 +72,16 @@ class ClientManager {
     
                             switch (commandId) {
                                 case 0: //รับข้อมูลผู้เล่น
-                                    String name = (String) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    int playerId = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    int roomid = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    boolean isOwner = (boolean) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    int ind = (int) in.readObject(); // รับข้อมูล Player จากเซิร์ฟเวอร์
-                                    String addName = (String) in.readObject();
-                                    
+                                    String name = (String) in.readObject();  // อ่าน String
+                                    int playerId = (int) in.readObject();  // อ่าน Integer
+                                    int roomId = (int) in.readObject();  // อ่าน Integer
+                                    boolean isOwner = (boolean) in.readObject();  // อ่าน Boolean
+                                    int ind = (int) in.readObject();  // อ่าน Integer
+                                    String addName = (String) in.readObject();  // อ่าน String
+
                                     this.player.changeName(name);
                                     this.player.setId(playerId);
-                                    this.player.setRoomID(roomid);
+                                    this.player.setRoomID(roomId);
                                     this.player.setOwner(isOwner);
                                     this.player.addInNameRoom(ind, addName);
                                     break;

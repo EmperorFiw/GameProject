@@ -279,32 +279,7 @@ class ClientHandler implements Runnable {
             Object clientMessage;
             while (true) {
                 try {
-                    // Thread แยกสำหรับการส่งข้อมูล player แบบต่อเนื่อง
-                    new Thread(() -> {
-                        try {
-                            int i=0;
-                            while (!socket.isClosed()) {
-                                synchronized(out) {
-                                    if (i == 4)
-                                        i = 0;
-
-                                    out.writeObject(0);
-                                    out.writeObject(player.getName());
-                                    out.writeObject(player.getId());
-                                    out.writeObject(player.getRoomID());
-                                    out.writeObject(player.isOwner());
-                                    out.writeObject(i);
-                                    out.writeObject(player.getPlayerInRoomFromIndex(i));
-                                    out.flush();
-                                    i++;
-                                }
-                                
-                                Thread.sleep(1000);  // รอ 1 วินาที
-                            }
-                        } catch (IOException | InterruptedException e) {
-                            System.out.println("Error while sending player data: " + e.getMessage());
-                        }
-                    }).start();
+                    
 
                     clientMessage = in.readObject();
                     if (clientMessage instanceof Integer) {
@@ -370,6 +345,34 @@ class ClientHandler implements Runnable {
                                 System.out.println("Unknown command ID: " + commandId);
                         }
                     }
+                    // Thread แยกสำหรับการส่งข้อมูล player แบบต่อเนื่อง
+                    new Thread(() -> {
+                        try {
+                            int i=0;
+                            while (!socket.isClosed()) {
+                                synchronized(out) {
+                                    if (i == 4)
+                                        i = 0;
+
+                                    out.writeObject(0);  // ส่ง Integer
+                                    out.writeObject(player.getName());  // ส่ง String
+                                    out.writeObject(player.getId());  // ส่ง Integer
+                                    out.writeObject(player.getRoomID());  // ส่ง Integer
+                                    out.writeObject(player.isOwner());  // ส่ง Boolean
+                                    out.writeObject(i);  // ส่ง Integer
+                                    out.writeObject(player.getPlayerInRoomFromIndex(i));  // ส่ง String
+                                    out.flush();
+                                    i++;
+                                }
+                                
+                                Thread.sleep(1000);  // รอ 1 วินาที
+                            }
+                        } catch (IOException | InterruptedException e) {
+                            System.out.println("Error while sending player data: " + e.getMessage());
+                            Thread.currentThread().interrupt(); // หยุด thread ถ้าเกิดข้อผิดพลาด
+                        }
+                        
+                    }).start();
                 } catch (SocketException e) {
                     System.out.println(player.getName() + " has disconnected (Connection reset).");
                     

@@ -278,22 +278,23 @@ class CreateRoomFrame extends JFrame {
                 }
             }
         });
-
+        Player player = client.getPlayerData();
+        updateLb updater = new updateLb(client, player, this); // ส่งอ้างอิง CreateRoomFrame
+        Thread updateThread = new Thread(updater);
+        updateThread.start(); // เริ่ม Thread สำหรับอัปเดต UI
         // เพิ่ม action listener สำหรับการปิดหน้าต่าง
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
                 client.leaveRoom();
+                updater.stop();
                 menuFrame mf = new menuFrame(client);
                 mf.setVisible(true);
             }
         });
 
         bgframe.add(panelcenter); // เพิ่ม panelcenter ลงใน bgframe
-        Player player = client.getPlayerData();
-        updateLb updater = new updateLb(client, player, this); // ส่งอ้างอิง CreateRoomFrame
-        Thread updateThread = new Thread(updater);
-        updateThread.start(); // เริ่ม Thread สำหรับอัปเดต UI
+
 
     }
 
@@ -349,7 +350,7 @@ class CreateRoomFrame extends JFrame {
 class updateLb implements Runnable {
     private String[] playerName = new String[4]; 
     private CreateRoomFrame crf; 
-    private volatile boolean running = true; 
+    private volatile boolean running; 
     private ClientManager client;
     private Player player;
 
@@ -357,6 +358,7 @@ class updateLb implements Runnable {
         this.client = client;
         this.crf = crf; // เก็บอ้างอิง CreateRoomFrame
         this.player = player;
+        this.running = true;
 
         for (int i = 0; i < playerName.length; i++) {
             playerName[i] = "Player " + (i + 1) + ": "; 
@@ -383,15 +385,9 @@ class updateLb implements Runnable {
     }
 
     public void stop() {
-        running = false; 
+        this.running = false; 
     }
 
-    public void setStringName(int id, String name) {
-        if (id >= 0 && id < playerName.length) {
-            playerName[id] = name; 
-            System.out.println("Updated in setString thread: " + playerName[id]);
-        }
-    }
 }
 
 

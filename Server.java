@@ -369,7 +369,6 @@ class ClientHandler implements Runnable {
                             }
                         } catch (IOException | InterruptedException e) {
                             System.out.println("Error while sending player data: " + e.getMessage());
-                            Thread.currentThread().interrupt(); // หยุด thread ถ้าเกิดข้อผิดพลาด
                         }
                         
                     }).start();

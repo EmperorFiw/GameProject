@@ -5,6 +5,8 @@ public class Player implements Serializable {
     private int id;
     private int roomID;
     private boolean isOwner = false;
+    private int playerHealth = 100;
+    private int playerDamage = 20;
     private String[] allPlayerInRoom = {"Empty", "Empty", "Empty", "Empty"}; // แก้ไขให้เป็น String[]
 
 
@@ -70,7 +72,17 @@ public class Player implements Serializable {
             this.allPlayerInRoom[actualIndex] = name;
         }
     }
+
+    public void setPlayerHealth(int hp)
+    {
+        this.playerHealth = hp;
+    }
     
+    public int getPlayerHealth()
+    {
+        return this.playerHealth;
+    }
+
     @Override
     public String toString() {
         return "Player{name='" + name + "', id=" + id + ", roomID=" + roomID + ", isOwner=" + isOwner + "}";

@@ -39,46 +39,41 @@ class Gamepage {
 }
 
 class BackgroundPanel extends JPanel {
-
     private Image bgimage;
     private Image spaceshipImage;
     private ImageIcon zombieNoob;
     private JFrame frame;
 
-    /* ------------------------------ Zombie -------------------------------- */
-    int spaceshipWidth = 100; // size
-    int spaceshipHeight = 100; // size
-    int spaceshipBetween = 60; // ค่า default ระยะห่างเริ่มต้น
+    int spaceshipWidth = 100; 
+    int spaceshipHeight = 100; 
+    int spaceshipBetween = 60; 
 
-    int[] zombiePositionX;
-    int[] zombiePositionY; // เพิ่มตำแหน่ง Y ของซอมบี้
-    private int zombiesToShow = 0; // ตัวแปรเพื่อกำหนดจำนวนซอมบี้ที่จะแสดงในขณะนี้
+    private Zombie[] zombies; // เปลี่ยนจากตำแหน่งเป็น Zombie
+    private int zombiesToShow = 0;
 
     BackgroundPanel(JFrame frame) {
         this.frame = frame;
-        bgimage = new ImageIcon(getClass().getResource("/image/newBackG.jpg")).getImage(); // get image background มา
+        bgimage = new ImageIcon(getClass().getResource("/image/newBackG.jpg")).getImage();
         spaceshipImage = new ImageIcon(getClass().getResource("/image/spaceship.png")).getImage()
-                .getScaledInstance(spaceshipWidth, spaceshipHeight, Image.SCALE_SMOOTH); // get Image spaceship มา และ ปรับ scale ของภาพ
+                .getScaledInstance(spaceshipWidth, spaceshipHeight, Image.SCALE_SMOOTH);
 
         zombieNoob = new ImageIcon(getClass().getResource("/image/zombie_noob.gif"));
 
-        int amountZombie = 50; // จำนวน zombie ที่ fix ไว้
-        zombiePositionX = new int[amountZombie + 1]; // เก็บตำแหน่ง X ของ zombie
-        zombiePositionY = new int[amountZombie + 1]; // เก็บตำแหน่ง Y ของ zombie
+        int amountZombie = 50; 
+        zombies = new Zombie[amountZombie]; // สร้างอาร์เรย์ซอมบี้
         Random random = new Random();
 
         // loop random หา position ของ zombie ตาม index ที่ i
-        for (int i = 0; i <= amountZombie; i++) {
-            zombiePositionX[i] = random.nextInt(111) + 1000; // random Position X ของ zombie ตั้งแต่ 1000 - 1110
-            zombiePositionY[i] = 160;//random.nextInt(500) + 100; // random Position Y ของ zombie ตั้งแต่ 100 - 600
+        for (int i = 0; i < amountZombie; i++) {
+            int posX = random.nextInt(111) + 1000; // random Position X ของ zombie
+            int posY = 160; // สามารถเปลี่ยนได้ตามต้องการ
+            zombies[i] = new Zombie(i, 100, posX, posY); // สร้างซอมบี้ใหม่
         }
 
-        // เริ่ม Thread สำหรับการแสดงผลทีละตัว
         new Thread(new ZombieSpawner(this, amountZombie)).start();
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                // แสดงพิกัดของเมาส์บนหัว JFrame
                 frame.setTitle("Zombie Hunter - Mouse at (" + e.getX() + ", " + e.getY() + ")");
             }
         });
@@ -87,49 +82,47 @@ class BackgroundPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        g.drawImage(bgimage, 0, 0, getWidth(), getHeight(), this); // สั่งให้วาดภาพ background
+        g.drawImage(bgimage, 0, 0, getWidth(), getHeight(), this);
 
-        int spaceshipX = 0; // กำหนดให้ มันเริ่ม x = 0
-        int spaceshipY = 50; // ให้มันเริ่มข้างล่าง Y
+        int spaceshipX = 0;
+        int spaceshipY = 50;
 
-        // loop สร้าง spaceship
         for (int i = 0; i < 4; i++) {
-            g.drawImage(spaceshipImage, spaceshipX, spaceshipY, spaceshipWidth, spaceshipHeight, this); // สั่งให้วาด spaceship
-            spaceshipY += spaceshipWidth + spaceshipBetween; // ทำการเพิ่มระยะห่างให้กับ spaceship
+            g.drawImage(spaceshipImage, spaceshipX, spaceshipY, spaceshipWidth, spaceshipHeight, this);
+            spaceshipY += spaceshipWidth + spaceshipBetween;
         }
 
-        // loop สร้าง zombie ทีละตัวตามจำนวนที่อนุญาตให้แสดง
+        // loop วาดซอมบี้
         for (int i = 0; i < zombiesToShow; i++) {
-            if (i < zombiePositionX.length - 1) {
-                g.drawImage(zombieNoob.getImage(), zombiePositionX[i], zombiePositionY[i], 150, 150, this); // สั่งวาดซอมบี้ โดยใช้ตำแหน่ง Y
-            }
+            Zombie zombie = zombies[i];
+            g.drawImage(zombieNoob.getImage(), zombie.getPositionX(), zombie.getPositionY(), 150, 150, this);
         }
     }
 
-    // ฟังก์ชันเพื่ออัปเดตตำแหน่งซอมบี้
     public void updateZombiePosition(int index, int newPositionX, int newPositionY) {
-        if (index < zombiePositionX.length) {
-            zombiePositionX[index] = newPositionX;
-            zombiePositionY[index] = newPositionY; // อัปเดตตำแหน่ง Y ด้วย
-            repaint(); // สั่งวาดใหม่
+        if (index < zombies.length) {
+            zombies[index].setPosition(newPositionX, newPositionY); // อัปเดตตำแหน่งซอมบี้
+            repaint();
         }
     }
 
-    // ฟังก์ชันเพื่ออัปเดตจำนวนซอมบี้ที่จะถูกแสดง
     public void showNextZombie() {
-        if (zombiesToShow < zombiePositionX.length - 1) {
+        if (zombiesToShow < zombies.length) {
             zombiesToShow++;
-            repaint(); // สั่งวาดใหม่เพื่อแสดงซอมบี้ตัวถัดไป
+            repaint();
         }
     }
 
-    public int getPositionY(int index)
-    {
-        return zombiePositionY[index];
+    public int getPositionY(int index) {
+        return zombies[index].getPositionY(); // ใช้ getPositionY จาก Zombie
     }
+
+    public Zombie[] getZombies() {
+        return zombies;
+    }
+    
 }
 
-// คลาสที่จัดการการสร้างซอมบี้ทีละตัว
 class ZombieSpawner implements Runnable {
     private BackgroundPanel panel;
     private int amountZombie;
@@ -144,7 +137,7 @@ class ZombieSpawner implements Runnable {
     public void run() {
         for (int i = 0; i < amountZombie; i++) {
             panel.showNextZombie(); // แสดงซอมบี้ตัวถัดไป
-            ZombieMover zombieMover = new ZombieMover(panel.zombiePositionX[i], panel.zombiePositionY[i], i, panel, random.nextInt(4));
+            ZombieMover zombieMover = new ZombieMover(panel.getZombies()[i], panel, random.nextInt(4)); // ใช้ getZombies() เพื่อเข้าถึง
             new Thread(zombieMover).start();
             // รอ 2 วินาทีก่อนสร้างซอมบี้ตัวต่อไป
             try {
@@ -156,36 +149,35 @@ class ZombieSpawner implements Runnable {
     }
 }
 
+
 // คลาสที่จัดการการเคลื่อนที่ของซอมบี้
 class ZombieMover implements Runnable {
-    private int positionX; // ตำแหน่ง x เริ่มต้นของซอมบี้
-    private int positionY; // ตำแหน่ง y เริ่มต้นของซอมบี้
-    private int index; // ดัชนีของซอมบี้ในอาร์เรย์
+    private Zombie zombie; 
+    private BackgroundPanel panel; 
     private int moveToId;
-    private BackgroundPanel panel; // แผงที่จะอัปเดตตำแหน่ง
-    Random random = new Random();
-    int[] possiblePositions = {50, 210, 370, 530}; // กำหนดตำแหน่งที่เป็นไปได้
+    
+    int[] possiblePositions = {50, 210, 370, 530};
 
-    ZombieMover(int positionX, int positionY, int index, BackgroundPanel panel, int moveToId) {
-        this.positionX = positionX;
-        this.positionY = positionY;
-        this.index = index;
+    ZombieMover(Zombie zombie, BackgroundPanel panel, int moveToId) {
+        this.zombie = zombie;
         this.panel = panel;
         this.moveToId = moveToId;
     }
 
     @Override
     public void run() {
-        int targetX = 50; // เป้าหมายการเคลื่อนที่ในแนว X
-        while (positionX > targetX) {
-            positionX -= 2; 
-            if (panel.getPositionY(index) != possiblePositions[moveToId] && panel.getPositionY(index) < possiblePositions[moveToId])
-                positionY += 1;
+        int targetX = 50;
+        while (zombie.getPositionX() > targetX) {
+            zombie.setPosition(zombie.getPositionX() - 2, zombie.getPositionY()); 
+            
+            if (zombie.getPositionY() != possiblePositions[moveToId] && zombie.getPositionY() < possiblePositions[moveToId])
+                zombie.setPosition(zombie.getPositionX(), zombie.getPositionY()+1);
             else
-                positionY -= 1;
-            panel.updateZombiePosition(index, positionX, positionY); // อัปเดตตำแหน่งซอมบี้ในแนว X และ Y
+                zombie.setPosition(zombie.getPositionX(), zombie.getPositionY()-1);
+
+            panel.updateZombiePosition(zombie.getId(), zombie.getPositionX(), zombie.getPositionY());
             try {
-                Thread.sleep(30); // รอ 50 มิลลิวินาทีเพื่อให้การเคลื่อนที่ดูราบรื่น
+                Thread.sleep(30); 
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

@@ -143,7 +143,7 @@ public class Server {
                     // แสดงชื่อผู้เล่นทั้งหมดในห้อง
                     for (int i = 0; i < playersInRoom.size(); i++) {
                         String playerName = playersInRoom.get(i);
-                        System.out.println("Player in room " + rid + ": " + playerName);
+                        //System.out.println("Player in room " + rid + ": " + playerName);
                         clientHandler.sendRoomData(i, playerName);
                         
                         player.addInNameRoom(i, playerName); // ใช้ playerName แทน player.getName()

@@ -4,37 +4,65 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.Serializable;
 import java.util.Random;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-public class Game {
-    public static void main(String[] args) {
-        Gamepage framegame = new Gamepage();
-        framegame.showFrame();
+
+public class Game implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private Gamepage gamePage; // สร้างตัวแปร gamePage ที่เก็บอ้างอิง
+
+    public void startGame(Player player, ClientManager client) {
+        gamePage = new Gamepage(player, client);
+        gamePage.showFrame();
+    }
+    public BackgroundPanel getPanelObject()
+    {
+        return gamePage.getPanel();
     }
 }
 
 class Gamepage {
     private JFrame frame;
+    private Player player;
+    private BackgroundPanel  panel;
     Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
-    Gamepage() {
+    Gamepage(Player player, ClientManager client) {
+        this.player = player;
+
         frame = new JFrame("Zombie Hunter");
         frame.setSize(screenSize.width, screenSize.height);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
 
         // panel of Background
-        BackgroundPanel panelBG = new BackgroundPanel(frame);
-        panelBG.setLayout(null);
-        frame.add(panelBG);
+        panel = new BackgroundPanel(frame, player, client);
+        panel.setLayout(null);
+        frame.add(panel);
+
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                System.out.println("Game is closing...");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            }
+        });
     }
 
     public void showFrame() {
         frame.setVisible(true);
+    }
+
+    public BackgroundPanel getPanel()
+    {
+        return this.panel;
     }
 }
 
@@ -43,6 +71,9 @@ class BackgroundPanel extends JPanel {
     private Image spaceshipImage;
     private ImageIcon zombieNoob;
     private JFrame frame;
+    private Player player;
+    private ClientManager client;
+    private int target;
 
     int spaceshipWidth = 100; 
     int spaceshipHeight = 100; 
@@ -51,8 +82,11 @@ class BackgroundPanel extends JPanel {
     private Zombie[] zombies; // เปลี่ยนจากตำแหน่งเป็น Zombie
     private int zombiesToShow = 0;
 
-    BackgroundPanel(JFrame frame) {
+    BackgroundPanel(JFrame frame, Player player, ClientManager client) {
         this.frame = frame;
+        this.player = player;
+        this.client = client;
+
         bgimage = new ImageIcon(getClass().getResource("/image/newBackG.jpg")).getImage();
         spaceshipImage = new ImageIcon(getClass().getResource("/image/spaceship.png")).getImage()
                 .getScaledInstance(spaceshipWidth, spaceshipHeight, Image.SCALE_SMOOTH);
@@ -70,7 +104,7 @@ class BackgroundPanel extends JPanel {
             zombies[i] = new Zombie(i, 100, posX, posY); // สร้างซอมบี้ใหม่
         }
 
-        new Thread(new ZombieSpawner(this, amountZombie)).start();
+        new Thread(new ZombieSpawner(this, amountZombie, player, client)).start();
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -120,24 +154,39 @@ class BackgroundPanel extends JPanel {
     public Zombie[] getZombies() {
         return zombies;
     }
+
+    public int getTarget()
+    {
+        return this.target;
+    }
+
+    public int setTarget(int targetid)
+    {
+        return this.target = targetid;
+    }
     
 }
 
 class ZombieSpawner implements Runnable {
     private BackgroundPanel panel;
     private int amountZombie;
-    Random random = new Random();
-
-    ZombieSpawner(BackgroundPanel panel, int amountZombie) {
+    private Player player;
+    private ClientManager client;
+    
+    ZombieSpawner(BackgroundPanel panel, int amountZombie, Player player, ClientManager client) {
         this.panel = panel;
         this.amountZombie = amountZombie;
+        this.player = player;
+        this.client = client;
     }
+    
 
     @Override
     public void run() {
         for (int i = 0; i < amountZombie; i++) {
+            client.getTarget();
             panel.showNextZombie(); // แสดงซอมบี้ตัวถัดไป
-            ZombieMover zombieMover = new ZombieMover(panel.getZombies()[i], panel, random.nextInt(4)); // ใช้ getZombies() เพื่อเข้าถึง
+            ZombieMover zombieMover = new ZombieMover(panel.getZombies()[i], panel, panel.getTarget()); // ใช้ getZombies() เพื่อเข้าถึง
             new Thread(zombieMover).start();
             // รอ 2 วินาทีก่อนสร้างซอมบี้ตัวต่อไป
             try {

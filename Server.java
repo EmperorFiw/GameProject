@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 
 /*
@@ -37,6 +38,7 @@ public class Server {
     public static Map<Integer, List<String>> roomPlayers = new HashMap<>(); // Room player lists
     private static ClientManager client = new ClientManager();
     private static MainMenu mn = new MainMenu();
+    private static Game game = new Game();
     public static void main(String[] args) {
         int port = 7777;
 
@@ -249,11 +251,27 @@ public class Server {
                 if (client.getPlayer().getRoomID() == rid) {
                     client.sendMessage("Game Start!!");
                     client.hideMainFrame(rid);
+                    client.playGame(game, rid);
+                    client.getPlayer().setInGame(true);
+                    //game.playGame(client.getPlayerObject());
                 }
             }
         }
     }
     
+    public static void getTarget()
+    {
+        Random random = new Random();
+        int target = random.nextInt(4);
+        synchronized (clients) {
+            for (ClientHandler client : clients) {
+                if (client.getPlayer().getInGame()) {
+                    client.sendTarget(target);
+                }
+            }
+        }
+        
+    }
 
 }
 
@@ -279,8 +297,6 @@ class ClientHandler implements Runnable {
             Object clientMessage;
             while (true) {
                 try {
-                    
-
                     clientMessage = in.readObject();
                     if (clientMessage instanceof Integer) {
                         int commandId = (Integer) clientMessage;
@@ -333,6 +349,9 @@ class ClientHandler implements Runnable {
                                 int getRid = (int) in.readObject();
                                 Server.startGame(getRid);
                                 break;
+                            case 5:
+                                Server.getTarget();
+                                break;
                             case 99:
                             {
                                 Player cplayer = (Player) in.readObject();//client.getPlayerData();
@@ -349,10 +368,13 @@ class ClientHandler implements Runnable {
                     new Thread(() -> {
                         try {
                             int i=0;
-                            while (!socket.isClosed()) {
+                            boolean running = true;
+                            while (running && !socket.isClosed()) {
                                 synchronized(out) {
                                     if (i == 4)
                                         i = 0;
+                                    if (player.getInGame())
+                                        running = false;
 
                                     out.writeObject(0);  // ส่ง Integer
                                     out.writeObject(player.getName());  // ส่ง String
@@ -505,5 +527,27 @@ class ClientHandler implements Runnable {
     {
         return this.player;
     } 
-    
+
+    public void playGame(Game game, int rid)
+    {
+        try {
+            out.writeObject(5);
+            out.writeObject(rid);
+            out.writeObject(game);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); 
+        }
+    }
+
+    public void sendTarget(int index)
+    {
+        try {
+            out.writeObject(6);
+            out.writeObject(index);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); 
+        }
+    }
 }

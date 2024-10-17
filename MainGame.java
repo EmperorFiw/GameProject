@@ -39,6 +39,8 @@ class ClientManager {
     private MainMenu mainmenu;
     private Socket socket;
     private Player player; // เพิ่มตัวแปร Player
+    private Game game;
+
 
     public void setFrameObject(menuFrame mf) {
         this.mf = mf;
@@ -75,7 +77,7 @@ class ClientManager {
                                     String name = (String) in.readObject();  // อ่าน String
                                     int playerId = (int) in.readObject();  // อ่าน Integer
                                     int roomId = (int) in.readObject();  // อ่าน Integer
-                                    boolean isOwner = (boolean) in.readObject();  // อ่าน Boolean
+                                    Boolean isOwner = (Boolean) in.readObject();  // อ่าน Boolean
                                     int ind = (int) in.readObject();  // อ่าน Integer
                                     String addName = (String) in.readObject();  // อ่าน String
 
@@ -97,9 +99,6 @@ class ClientManager {
                                         e.printStackTrace();
                                     }
                                     break;
-                                
-                                
-                                
                                 case 3: // create room
                                     boolean canJoin = (Boolean) in.readObject();
                                     int rid = (Integer) in.readObject();
@@ -122,6 +121,26 @@ class ClientManager {
                                     int hRid = (Integer) in.readObject();
                                     if (player.getRoomID() == hRid && player.isOwner() == false)
                                         mf.disRFrame();
+                                    break;
+                                case 5:
+                                    Integer roomID = (Integer) in.readObject();
+                                    Object gameObject = in.readObject();
+
+                                    if (player.getRoomID() == roomID)
+                                    {
+                                        if (gameObject instanceof Game) {
+                                            this.game = (Game) gameObject; // แปลงเป็น Game
+                                            sendStartGame();
+                                        } else {
+                                            System.out.println("Received object is not of type Game");
+                                        }
+                                    }
+                                    break;
+                                case 6:
+                                    Integer targetArr = (Integer) in.readObject();
+                                    BackgroundPanel panel = game.getPanelObject();
+                                    System.out.println(targetArr);
+                                    panel.setTarget(targetArr);
                                     break;
                                 default:
                                     System.out.println("Unknow command");
@@ -213,6 +232,21 @@ class ClientManager {
             out.flush();
         } catch (IOException e) {
             e.printStackTrace(); // พิมพ์ stack trace เพื่อช่วยในการ debug
+        }
+    }
+
+    public void sendStartGame()
+    {
+        game.startGame(player, this);
+    }
+
+    public void getTarget()
+    {
+        try {
+            out.writeObject(5);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

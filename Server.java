@@ -259,10 +259,10 @@ public class Server {
         }
     }
     
-    public static void getTarget()
+    public static void getTarget(Player player)
     {
         Random random = new Random();
-        int target = random.nextInt(4);
+        int target = random.nextInt(player.getCountPlayer());
         synchronized (clients) {
             for (ClientHandler client : clients) {
                 if (client.getPlayer().getInGame()) {
@@ -350,7 +350,7 @@ class ClientHandler implements Runnable {
                                 Server.startGame(getRid);
                                 break;
                             case 5:
-                                Server.getTarget();
+                                Server.getTarget(player);
                                 break;
                             case 99:
                             {

@@ -121,7 +121,7 @@ class BackgroundPanel extends JPanel {
         int spaceshipX = 0;
         int spaceshipY = 50;
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < player.getCountPlayer(); i++) {
             g.drawImage(spaceshipImage, spaceshipX, spaceshipY, spaceshipWidth, spaceshipHeight, this);
             spaceshipY += spaceshipWidth + spaceshipBetween;
         }

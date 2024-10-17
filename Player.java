@@ -64,6 +64,19 @@ public class Player implements Serializable {
         return this.allPlayerInRoom[index];
     }
 
+    public int getCountPlayer()
+    {
+        int count =0;
+        for (int i=0;i<this.allPlayerInRoom.length;i++)
+        {
+            if (!this.allPlayerInRoom[i].equals("Empty"))
+            {
+                count ++;
+            }
+        }
+        return count;
+    }
+
     public void addInNameRoom(int index, String name) {
         int actualIndex = index < 4 ? index : index - 4;
         

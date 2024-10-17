@@ -110,4 +110,9 @@ public class Player implements Serializable {
         return "Player{name='" + name + "', id=" + id + ", roomID=" + roomID + ", isOwner=" + isOwner + "}";
     }
 
+    public void setTarget(int id2) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setTarget'");
+    }
+
 }

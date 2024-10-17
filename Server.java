@@ -47,7 +47,7 @@ public class Server {
 
             while (true) {
                 Socket socket = serverSocket.accept();
-                int playerId;
+                int playerId; 
 
                 // Get an ID from the queue if available
                 if (!freeIDs.isEmpty()) {

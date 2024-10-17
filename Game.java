@@ -99,7 +99,7 @@ class BackgroundPanel extends JPanel {
 
         // loop random หา position ของ zombie ตาม index ที่ i
         for (int i = 0; i < amountZombie; i++) {
-            int posX = random.nextInt(111) + 1000; // random Position X ของ zombie
+            int posX =111+1000;//random.nextInt(111) + 1000; // random Position X ของ zombie
             int posY = 160; // สามารถเปลี่ยนได้ตามต้องการ
             zombies[i] = new Zombie(i, 100, posX, posY); // สร้างซอมบี้ใหม่
         }
@@ -187,6 +187,7 @@ class ZombieSpawner implements Runnable {
             client.getTarget();
             panel.showNextZombie(); // แสดงซอมบี้ตัวถัดไป
             ZombieMover zombieMover = new ZombieMover(panel.getZombies()[i], panel, panel.getTarget()); // ใช้ getZombies() เพื่อเข้าถึง
+            System.out.println(panel.getTarget());
             new Thread(zombieMover).start();
             // รอ 2 วินาทีก่อนสร้างซอมบี้ตัวต่อไป
             try {

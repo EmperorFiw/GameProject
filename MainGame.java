@@ -139,7 +139,7 @@ class ClientManager {
                                 case 6:
                                     Integer targetArr = (Integer) in.readObject();
                                     BackgroundPanel panel = game.getPanelObject();
-                                    System.out.println(targetArr);
+                                    //System.out.println(targetArr);
                                     panel.setTarget(targetArr);
                                     break;
                                 default:

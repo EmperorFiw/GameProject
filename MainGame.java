@@ -74,6 +74,8 @@ class ClientManager {
     
                             switch (commandId) {
                                 case 0: //รับข้อมูลผู้เล่น
+                                    if (player.getInGame())
+                                        continue;
                                     String name = (String) in.readObject();  // อ่าน String
                                     int playerId = (int) in.readObject();  // อ่าน Integer
                                     int roomId = (int) in.readObject();  // อ่าน Integer
@@ -137,10 +139,14 @@ class ClientManager {
                                     }
                                     break;
                                 case 6:
-                                    Integer targetArr = (Integer) in.readObject();
+                                    int[] targetArr = (int[]) in.readObject(); 
                                     BackgroundPanel panel = game.getPanelObject();
-                                    //System.out.println(targetArr);
                                     panel.setTarget(targetArr);
+                                    break;
+                                case 7:
+                                    int[] zdata = (int[]) in.readObject(); 
+                                    BackgroundPanel panelzdata = game.getPanelObject();
+                                    panelzdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
                                     break;
                                 default:
                                     System.out.println("Unknow command");
@@ -153,6 +159,7 @@ class ClientManager {
                     closeConnection();
                     System.exit(0);
                 } catch (IOException | ClassNotFoundException e) {
+                    System.out.println("Found error");
                     e.printStackTrace();
                     closeConnection(); // ปิดการเชื่อมต่อเมื่อเกิดข้อผิดพลาด
                 }
@@ -244,6 +251,22 @@ class ClientManager {
     {
         try {
             out.writeObject(5);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendUpdateZP(int zid, int zpX, int zpY, int hp)
+    {
+        int[] zdata = new int[4];
+        zdata[0] = zid;
+        zdata[1] = zpX;
+        zdata[2] = zpY;
+        zdata[3] = hp;
+        try {
+            out.writeObject(6);
+            out.writeObject(zdata);
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();

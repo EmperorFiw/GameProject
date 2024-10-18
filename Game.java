@@ -12,7 +12,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 
-
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -77,7 +76,7 @@ class BackgroundPanel extends JPanel {
     private JFrame frame;
     private Player player;
     private ClientManager client;
-    private int target;
+    private int[] target; 
     
     private ArrayList<Bullet> bullets; // เก็บกระสุนทั้งหมด
 
@@ -92,53 +91,49 @@ class BackgroundPanel extends JPanel {
         this.frame = frame;
         this.player = player;
         this.client = client;
-
-        this.bullets = new ArrayList<>(); // สร้าง ArrayList สำหรับกระสุน
-  
+    
+        this.bullets = new ArrayList<>(); // Create ArrayList for bullets
+    
         bgimage = new ImageIcon(getClass().getResource("/image/newBackG.jpg")).getImage();
         spaceshipImage = new ImageIcon(getClass().getResource("/image/spaceship.png")).getImage()
                 .getScaledInstance(spaceshipWidth, spaceshipHeight, Image.SCALE_SMOOTH);
-
+    
         zombieNoob = new ImageIcon(getClass().getResource("/image/Zombiefly_Noob.gif"));
-
-        int amountZombie = 50; 
-        zombies = new Zombie[amountZombie]; // สร้างอาร์เรย์ซอมบี้
+    
+        int amountZombie = 2; 
+        zombies = new Zombie[amountZombie]; // Create an array for zombies
         Random random = new Random();
-
-        // loop random หา position ของ zombie ตาม index ที่ i
+    
+        // Loop random to find zombie positions
         for (int i = 0; i < amountZombie; i++) {
-            int posX = 111+1250;//random.nextInt(111) + 1250; // random Position X ของ zombie
-            int posY = 160; // สามารถเปลี่ยนได้ตามต้องการ
-            zombies[i] = new Zombie(i, 100, posX, posY); // สร้างซอมบี้ใหม่
+            int posX = 111 + 1000; // Random position X for zombies
+            int posY = 160; // Can change as needed
+            zombies[i] = new Zombie(i, 100, posX, posY); // Create new zombie
         }
-
+    
         new Thread(new ZombieSpawner(this, amountZombie, player, client)).start();
-
-        
-        // เพิ่ม mouse click event สำหรับการยิง
+    
+        // Mouse click event to shoot
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-
-                // เพิ่มกระสุนใหม่เมื่อคลิกเมาส์ โดยตำแหน่งกระสุนจะออกจากหัวยาน
-                int spaceshipX = 0; // ตำแหน่ง X ของยานอวกาศ
-                int spaceshipY = 50; // ตำแหน่ง Y ของยานอวกาศ
-
-                bullets.add(new Bullet(spaceshipX + spaceshipWidth, spaceshipY + spaceshipHeight / 2)); 
-                // หาตำแหน่งของลำปืน เพื่อให้กระสุนออกหน้าลำปืนอ่ะ
+                int spaceshipX = 0; // Position X of the spaceship
+                int spaceshipY = 50; // Position Y of the spaceship
+    
+                bullets.add(new Bullet(spaceshipX + spaceshipWidth, spaceshipY + spaceshipHeight / 2, e.getX(), e.getY())); 
             }
         });
+    
+        // In the BackgroundPanel constructor
+        new BulletMover(bullets, 30, this, client).start(); // Pass 'this' to the BulletMover
 
-
+    
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
                 frame.setTitle("Zombie Hunter - Mouse at (" + e.getX() + ", " + e.getY() + ")");
             }
         });
-
-        
-
     }
 
     @Override
@@ -163,7 +158,7 @@ class BackgroundPanel extends JPanel {
         /*------------------------------- วาด หลอดเลือด Zombie ------------------------------------- */
             int HealtBarWidth = 70; //ขนาดของหลอดเลือด
             int HealtBarHeigth = 7;//ขนาดของหลอดเลือด
-            int currentHealt = (int) ((double) zombie.getHealth() / 100 * HealtBarWidth);  // เก็บค่าเลือดล่าสุดของ zombie
+            int currentHealt = zombie.getHealth();  // เก็บค่าเลือดล่าสุดของ zombie
 
             int HealthX = zombie.getPositionX() + 4; // position ให้มันตำแหน่งเดัยวกับ zombie
             int HealthY = zombie.getPositionY() - 12; // position ให้มันตำแหน่งเดัยวกับ zombie
@@ -183,34 +178,18 @@ class BackgroundPanel extends JPanel {
 
         }
 
-         // วาดกระสุน
-         for (Bullet bullet : bullets) {
-            bullet.move();
+        // วาดกระสุน
+        for (Bullet bullet : bullets) {
             g.setColor(Color.YELLOW); // สีกระสุน
-            g.fillRect(bullet.getX(), bullet.getY(), 5, 5); //วาดกระสุน
-
-            // ตรวจสอบว่ากระสุนชนกับซอมบี้หรือไม่
-            for (Zombie zombie : zombies) {
-                if (bullet.checkCollision(zombie)) { //ดึง method มาจาก class Bullet เพื่อเช็คว่ากระสุนโดน zombie ไหม
-
-                    zombie.setHealth(zombie.getHealth() - 15); // เลือดจะลด 15 Hp เมื่อกระสุนชน
-
-                    if (zombie.getHealth() <= 0) {
-                        zombie.setPosition(-100, -100);  // ซ่อนซอมบี้ที่โดนยิงตายแล้ว
-                    }
-
-                    bullet.setActive(false); // กระสุนที่ใช้ไปจะหยุดทำงาน
-                    break;
-                }
-            }
+            g.fillRect(bullet.getX(), bullet.getY(), 5, 5); // วาดกระสุน
         }
-        bullets.removeIf(bullet -> !bullet.isActive()); // ลบกระสุนที่ไม่ทำงานแล้ว
     }
         
 
-    public void updateZombiePosition(int index, int newPositionX, int newPositionY) {
+    public void updateZombie(int index, int newPositionX, int newPositionY, int hp) {
         if (index < zombies.length) {
             zombies[index].setPosition(newPositionX, newPositionY); // อัปเดตตำแหน่งซอมบี้
+            zombies[index].setHealth(hp);
             repaint();
         }
     }
@@ -230,14 +209,14 @@ class BackgroundPanel extends JPanel {
         return zombies;
     }
 
-    public int getTarget()
+    public int getTarget(int index)
     {
-        return this.target;
+        return this.target[index];
     }
 
-    public int setTarget(int targetid)
-    {
-        return this.target = targetid;
+    public int[] setTarget(int[] targetid) {
+        this.target = targetid; // ตั้งค่าให้ตัวแปร target
+        return this.target; // ส่งกลับอาเรย์ของเป้าหมาย
     }
     
 }
@@ -247,6 +226,7 @@ class ZombieSpawner implements Runnable {
     private int amountZombie;
     private Player player;
     private ClientManager client;
+    private boolean needTarget = true;
     
     ZombieSpawner(BackgroundPanel panel, int amountZombie, Player player, ClientManager client) {
         this.panel = panel;
@@ -255,21 +235,24 @@ class ZombieSpawner implements Runnable {
         this.client = client;
     }
     
-
+    
     @Override
     public void run() {
         for (int i = 0; i < amountZombie; i++) {
-            client.getTarget();
-            panel.showNextZombie(); // แสดงซอมบี้ตัวถัดไป
-            ZombieMover zombieMover = new ZombieMover(panel.getZombies()[i], panel, panel.getTarget()); // ใช้ getZombies() เพื่อเข้าถึง
-            // System.out.println(panel.getTarget());
-            new Thread(zombieMover).start();
-            // รอ 2 วินาทีก่อนสร้างซอมบี้ตัวต่อไป
+            if (needTarget) 
+            {
+                client.getTarget(); 
+                needTarget = false;
+            }
             try {
-                Thread.sleep(1500); // รอ 1.5 วินาที
+                Thread.sleep(2000); // รอ 1.5 วินาที
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            panel.showNextZombie(); // แสดงซอมบี้ตัวถัดไป
+            ZombieMover zombieMover = new ZombieMover(panel.getZombies()[i], panel, panel.getTarget(i), client); // ใช้ getZombies() เพื่อเข้าถึง
+            // System.out.println(panel.getTarget());
+            new Thread(zombieMover).start();
         }
     }
 }
@@ -280,26 +263,29 @@ class ZombieMover implements Runnable {
     private Zombie zombie; 
     private BackgroundPanel panel; 
     private int moveToId;
+    private ClientManager client;
     int[] possiblePositions = {50, 210, 370, 530};
 
-    ZombieMover(Zombie zombie, BackgroundPanel panel, int moveToId) {
+    ZombieMover(Zombie zombie, BackgroundPanel panel, int moveToId, ClientManager client) {
         this.zombie = zombie;
         this.panel = panel;
         this.moveToId = moveToId;
+        this.client = client;
     }
 
     @Override
     public void run() {
         int targetX = 50;
-        while (zombie.getPositionX() > targetX) {
+        while (zombie.getPositionX() > targetX && zombie.getHealth() != 0) {
+            System.out.println("im ruNonf");
             zombie.setPosition(zombie.getPositionX() - 2, zombie.getPositionY()); 
             
             if (zombie.getPositionY() != possiblePositions[moveToId] && zombie.getPositionY() < possiblePositions[moveToId])
                 zombie.setPosition(zombie.getPositionX(), zombie.getPositionY()+1);
             else
                 zombie.setPosition(zombie.getPositionX(), zombie.getPositionY()-1);
-
-            panel.updateZombiePosition(zombie.getId(), zombie.getPositionX(), zombie.getPositionY());
+            
+            panel.updateZombie(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
             try {
                 Thread.sleep(30); 
             } catch (InterruptedException e) {
@@ -311,18 +297,42 @@ class ZombieMover implements Runnable {
 
 // คลาส Bullet สำหรับกระสุน
 class Bullet {
-    private int x, y;
+    private int x, y, toX, toY;
     private boolean active;
+    private boolean isCal = false;
+    private double moveToX = 0;
+    private double moveToY = 0;
 
-    public Bullet(int x, int y) {
+    public Bullet(int x, int y, int toX, int toY) {
         this.x = x; // จะเป็น spaceshipX + spaceshipWidth เพื่อให้ออกจากหัวยาน
         this.y = y; // จะเป็น spaceshipY + spaceshipHeight / 2 เพื่อให้กระสุนออกจากกลางยาน
+        this.toX = toX; 
+        this.toY = toY; 
         this.active = true;
     }
 
     public void move() {
-        x += 10; // กระสุนจะเคลื่อนที่ไปทางขวา
+
+        if (!isCal)
+        {
+            int deltaX = toX - x;
+            int deltaY = toY - y;
+    
+            // คำนวณระยะทางรวม
+            double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+            // คำนวณอัตราส่วนการเคลื่อนที่
+            moveToX = (deltaX / distance) * 10; // 10 คือความเร็ว
+            moveToY = (deltaY / distance) * 10; // 10 คือความเร็ว
+             isCal = true;
+        }
+
+        // อัปเดตตำแหน่ง
+        x += moveToX;
+        y += moveToY;
     }
+
+    
 
     public boolean checkCollision(Zombie zombie) {
         // ตรวจสอบว่ากระสุนชนกับซอมบี้หรือไม่
@@ -344,5 +354,57 @@ class Bullet {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+}
+
+class BulletMover extends Thread {
+    private final ArrayList<Bullet> bullets; 
+    private final long sleepTime;
+    private BackgroundPanel panel; // Reference to BackgroundPanel for collision detection
+    private ClientManager client;
+
+    public BulletMover(ArrayList<Bullet> bullets, long sleepTime, BackgroundPanel panel, ClientManager client) {
+        this.bullets = bullets;
+        this.sleepTime = sleepTime;
+        this.panel = panel; // Store reference to BackgroundPanel
+        this.client = client;
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            // Update bullets
+            for (int i = 0; i < bullets.size(); i++) {
+                Bullet bullet = bullets.get(i);
+                if (bullet.isActive()) {
+                    bullet.move(); // Move the bullet
+
+                    // Check collision with zombies
+                    for (Zombie zombie : panel.getZombies()) {
+                        if (bullet.checkCollision(zombie)) {
+                            zombie.setHealth(zombie.getHealth() - 15); // Decrease zombie health
+                            client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
+
+                            if (zombie.getHealth() <= 0) {
+                                zombie.setPosition(-100, -100); // Hide dead zombie
+                                client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
+                            }
+                            bullet.setActive(false); // Deactivate bullet
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Remove inactive bullets
+            bullets.removeIf(bullet -> !bullet.isActive());
+
+            try {
+                Thread.sleep(sleepTime); // Delay for 30 ms
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Handle thread interruption
+                break; // Exit loop if interrupted
+            }
+        }
     }
 }

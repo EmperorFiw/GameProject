@@ -259,19 +259,36 @@ public class Server {
         }
     }
     
-    public static void getTarget(Player player)
-    {
+    public static void getTarget(Player player) {
         Random random = new Random();
-        int target = random.nextInt(player.getCountPlayer());
+        int count = player.getCountPlayer();
+        int[] targets = new int[20]; // สร้างอาเรย์สำหรับเก็บค่าเป้าหมาย 20 ค่า
+    
+        // สุ่มค่าเป้าหมาย 20 ครั้ง
+        for (int i = 0; i < targets.length; i++) {
+            targets[i] = random.nextInt(count);
+        }
+    
         synchronized (clients) {
             for (ClientHandler client : clients) {
                 if (client.getPlayer().getInGame()) {
-                    client.sendTarget(target);
+                    client.sendTarget(targets); // ส่งอาเรย์ไปยัง ClientHandler
                 }
             }
         }
-        
     }
+
+    public static void sendzData(int[] zdata)
+    {
+        synchronized (clients) {
+            for (ClientHandler client : clients) {
+                if (client.getPlayer().getInGame()) {
+                    client.sendzDataToPlayer(zdata); // ส่งอาเรย์ไปยัง ClientHandler
+                }
+            }
+        }
+    }
+    
 
 }
 
@@ -351,6 +368,10 @@ class ClientHandler implements Runnable {
                                 break;
                             case 5:
                                 Server.getTarget(player);
+                                break;
+                            case 6:
+                                int[] zdata = (int[]) in.readObject(); 
+                                Server.sendzData(zdata);
                                 break;
                             case 99:
                             {
@@ -540,11 +561,22 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void sendTarget(int index)
+    public void sendTarget(int[] index)
     {
         try {
             out.writeObject(6);
             out.writeObject(index);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); 
+        }
+    }
+
+    public void sendzDataToPlayer(int[] zdata)
+    {
+        try {
+            out.writeObject(7);
+            out.writeObject(zdata);
             out.flush();
         } catch (IOException e) {
             e.printStackTrace(); 

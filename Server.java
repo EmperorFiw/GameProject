@@ -460,7 +460,7 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void sendMessage(Serializable message) {
+    public synchronized void sendMessage(Serializable message) {
         if (out != null) {
             try {
                 out.writeObject(message);
@@ -471,7 +471,7 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void sendRoomData(int index, Serializable name) {
+    public synchronized void sendRoomData(int index, Serializable name) {
         if (out != null) {
             try {
                 player.addInNameRoom(index, (String)name);
@@ -552,7 +552,7 @@ class ClientHandler implements Runnable {
         sendMessage("Your name has been changed to " + newName);
     }
 
-    public void hideMainFrame(int rid)
+    public synchronized void hideMainFrame(int rid)
     {
         try {
             out.writeObject(4);
@@ -568,7 +568,7 @@ class ClientHandler implements Runnable {
         return this.player;
     } 
 
-    public void playGame(Game game, int rid)
+    public synchronized void playGame(Game game, int rid)
     {
         try {
             out.writeObject(5);
@@ -580,7 +580,7 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void sendTarget(int[] index)
+    public synchronized void sendTarget(int[] index)
     {
         try {
             out.writeObject(6);
@@ -591,7 +591,7 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void sendzDataToPlayer(int[] zdata)
+    public synchronized void sendzDataToPlayer(int[] zdata)
     {
         try {
             out.writeObject(7);
@@ -603,7 +603,7 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void sendbDataToPlayer(int[] bdata)
+    public synchronized void sendbDataToPlayer(int[] bdata)
     {
         try {
             out.writeObject(7);

@@ -125,7 +125,6 @@ class BackgroundPanel extends JPanel {
                 int spaceshipY = 50; // Position Y of the spaceship
 
                 client.drawBullet(spaceshipX + spaceshipWidth, spaceshipY + spaceshipHeight / 2, e.getX(), e.getY());
-
                 
             }
         });
@@ -399,9 +398,9 @@ class BulletMover extends Thread {
     }
 
     @Override
-    public void run() {
-        while (true) {
-            // Update bullets
+public void run() {
+    while (true) {
+        synchronized (bullets) {  // เพิ่มการซิงโครไนซ์
             for (int i = 0; i < bullets.size(); i++) {
                 Bullet bullet = bullets.get(i);
                 if (bullet.isActive()) {
@@ -410,12 +409,14 @@ class BulletMover extends Thread {
                     // Check collision with zombies
                     for (Zombie zombie : panel.getZombies()) {
                         if (bullet.checkCollision(zombie)) {
-                            zombie.setHealth(zombie.getHealth() - 15); // Decrease zombie health
-                            client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
-
-                            if (zombie.getHealth() <= 0) {
-                                zombie.setPosition(-100, -100); // Hide dead zombie
+                            synchronized (zombie) {  // ซิงโครไนซ์การเข้าถึงข้อมูลซอมบี้
+                                zombie.setHealth(zombie.getHealth() - 15); // Decrease zombie health
                                 client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
+
+                                if (zombie.getHealth() <= 0) {
+                                    zombie.setPosition(-100, -100); // Hide dead zombie
+                                    client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
+                                }
                             }
                             bullet.setActive(false); // Deactivate bullet
                             break;
@@ -426,13 +427,15 @@ class BulletMover extends Thread {
 
             // Remove inactive bullets
             bullets.removeIf(bullet -> !bullet.isActive());
+        }
 
-            try {
-                Thread.sleep(sleepTime); // Delay for 30 ms
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // Handle thread interruption
-                break; // Exit loop if interrupted
-            }
+        try {
+            Thread.sleep(sleepTime); // Delay for 30 ms
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Handle thread interruption
+            break; // Exit loop if interrupted
         }
     }
+}
+
 }

@@ -146,18 +146,20 @@ class ClientManager {
                                 case 7:
                                     String typeGame = (String) in.readObject();
                                     BackgroundPanel panelgdata = game.getPanelObject();
-
-                                    if (typeGame.equals("Zombie"))
-                                    {
-                                        int[] zdata = (int[]) in.readObject(); 
-                                        panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
-                                    }
-                                    else if (typeGame.equals("Bullet"))
-                                    {
-                                        int[] bdata = (int[]) in.readObject(); 
-                                        panelgdata.drawBullet(bdata[0], bdata[1], bdata[2], bdata[3]);
+                                
+                                    if (typeGame.equals("Zombie")) {
+                                        int[] zdata = (int[]) in.readObject();
+                                        synchronized (panelgdata) {  // ซิงโครไนซ์การอัปเดตข้อมูลซอมบี้
+                                            panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
+                                        }
+                                    } else if (typeGame.equals("Bullet")) {
+                                        int[] bdata = (int[]) in.readObject();
+                                        synchronized (panelgdata) {  // ซิงโครไนซ์การวาดกระสุน
+                                            panelgdata.drawBullet(bdata[0], bdata[1], bdata[2], bdata[3]);
+                                        }
                                     }
                                     break;
+                                
                                 default:
                                     System.out.println("Unknow command");
                                     break;
@@ -214,7 +216,7 @@ class ClientManager {
         }
     }
     
-    public void isRoomExist(int roomNumber) {
+    public synchronized void isRoomExist(int roomNumber) {
         try {
             out.writeObject(3);
             out.writeObject(roomNumber);
@@ -224,7 +226,7 @@ class ClientManager {
         }
     }
 
-    public void startGame(CreateRoomFrame frame, int rid)
+    public synchronized void startGame(CreateRoomFrame frame, int rid)
     {
         frame.setVisible(false);
         try {
@@ -241,7 +243,7 @@ class ClientManager {
         return this.player;
     }
 
-    public void leaveRoom()
+    public synchronized void leaveRoom()
     {
         try {
             out.writeObject(99);
@@ -257,7 +259,7 @@ class ClientManager {
         game.startGame(player, this);
     }
 
-    public void getTarget()
+    public synchronized void getTarget()
     {
         try {
             out.writeObject(5);
@@ -267,7 +269,7 @@ class ClientManager {
         }
     }
 
-    public void sendUpdateZP(int zid, int zpX, int zpY, int hp)
+    public synchronized void sendUpdateZP(int zid, int zpX, int zpY, int hp)
     {
         int[] zdata = new int[4];
         zdata[0] = zid;
@@ -284,7 +286,7 @@ class ClientManager {
         }
     }
 
-    public void drawBullet(int x, int y, int tx, int ty)
+    public synchronized void drawBullet(int x, int y, int tx, int ty)
     {
         int[] bdata = new int[4];
         bdata[0] = x;

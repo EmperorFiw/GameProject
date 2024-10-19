@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
@@ -8,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.geom.AffineTransform;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
@@ -150,25 +153,44 @@ class BackgroundPanel extends JPanel {
 
     public void playGunSound() {
         try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("/sound/shot.wav"));
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("    "));
             Clip clip = AudioSystem.getClip();
             clip.open(audioInputStream);
             clip.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    } 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         g.drawImage(bgimage, 0, 0, getWidth(), getHeight(), this);
 
-        int spaceshipX = 0;
+        int spaceshipX = 30;
         int spaceshipY = 50;
+        
+        Font font = new Font("Arial", Font.BOLD, 20);
+        g.setFont(font);
 
+        Graphics2D g2d = (Graphics2D) g; //โยนมาให้ g2d จัดการ
+        
         for (int i = 0; i < player.getCountPlayer(); i++) {
+        
             g.drawImage(spaceshipImage, spaceshipX, spaceshipY, spaceshipWidth, spaceshipHeight, this);
             spaceshipY += spaceshipWidth + spaceshipBetween;
+            
+/* ตัวหนังสือ */
+            String namePlayer = player.getPlayerInRoomFromIndex(i);
+            g2d.setColor(Color.WHITE);
+
+            g2d.translate(spaceshipX, spaceshipY); //ปรับตำแหน่ง x y 
+            g2d.rotate(Math.toRadians(90)); //ปรับองศาตัวหนังสือ
+            g2d.drawString(namePlayer, 0, 0); //วาดชื่อ ตำแหน่ง 0 0 
+            g2d.setTransform(new AffineTransform()); //reset ค่าทั้งหมด ไม่ให้กระทบกับการวาดอันอื่น
+            
+            
+
+
         }
 
         // loop วาดซอมบี้

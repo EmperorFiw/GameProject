@@ -283,12 +283,22 @@ public class Server {
         synchronized (clients) {
             for (ClientHandler client : clients) {
                 if (client.getPlayer().getInGame()) {
-                    client.sendzDataToPlayer(zdata); // ส่งอาเรย์ไปยัง ClientHandler
+                    client.sendzDataToPlayer(zdata);
                 }
             }
         }
     }
     
+    public static void sendDrawBullet(int[] bdata)
+    {
+        synchronized (clients) {
+            for (ClientHandler client : clients) {
+                if (client.getPlayer().getInGame()) {
+                    client.sendbDataToPlayer(bdata);
+                }
+            }
+        }
+    }
 
 }
 
@@ -370,8 +380,17 @@ class ClientHandler implements Runnable {
                                 Server.getTarget(player);
                                 break;
                             case 6:
-                                int[] zdata = (int[]) in.readObject(); 
-                                Server.sendzData(zdata);
+                                String typeGame = (String) in.readObject();
+                                if (typeGame.equals("Zombie"))
+                                {
+                                    int[] zdata = (int[]) in.readObject(); 
+                                    Server.sendzData(zdata);
+                                }
+                                else if (typeGame.equals("Bullet"))
+                                {
+                                    int[] bdata = (int[]) in.readObject();
+                                    Server.sendDrawBullet(bdata);
+                                }
                                 break;
                             case 99:
                             {
@@ -576,7 +595,20 @@ class ClientHandler implements Runnable {
     {
         try {
             out.writeObject(7);
+            out.writeObject("Zombie");
             out.writeObject(zdata);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace(); 
+        }
+    }
+
+    public void sendbDataToPlayer(int[] bdata)
+    {
+        try {
+            out.writeObject(7);
+            out.writeObject("Bullet");
+            out.writeObject(bdata);
             out.flush();
         } catch (IOException e) {
             e.printStackTrace(); 

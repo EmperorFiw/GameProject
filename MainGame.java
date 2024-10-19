@@ -144,9 +144,19 @@ class ClientManager {
                                     panel.setTarget(targetArr);
                                     break;
                                 case 7:
-                                    int[] zdata = (int[]) in.readObject(); 
-                                    BackgroundPanel panelzdata = game.getPanelObject();
-                                    panelzdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
+                                    String typeGame = (String) in.readObject();
+                                    BackgroundPanel panelgdata = game.getPanelObject();
+
+                                    if (typeGame.equals("Zombie"))
+                                    {
+                                        int[] zdata = (int[]) in.readObject(); 
+                                        panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
+                                    }
+                                    else if (typeGame.equals("Bullet"))
+                                    {
+                                        int[] bdata = (int[]) in.readObject(); 
+                                        panelgdata.drawBullet(bdata[0], bdata[1], bdata[2], bdata[3]);
+                                    }
                                     break;
                                 default:
                                     System.out.println("Unknow command");
@@ -266,7 +276,25 @@ class ClientManager {
         zdata[3] = hp;
         try {
             out.writeObject(6);
+            out.writeObject("Zombie");
             out.writeObject(zdata);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void drawBullet(int x, int y, int tx, int ty)
+    {
+        int[] bdata = new int[4];
+        bdata[0] = x;
+        bdata[1] = y;
+        bdata[2] = tx;
+        bdata[3] = ty;
+        try {
+            out.writeObject(6);
+            out.writeObject("Bullet");
+            out.writeObject(bdata);
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();

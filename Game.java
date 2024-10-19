@@ -12,10 +12,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-
 
 public class Game implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -73,6 +75,7 @@ class BackgroundPanel extends JPanel {
     private Image bgimage;
     private Image spaceshipImage;
     private ImageIcon zombieNoob;
+    private ImageIcon zombieBoss;
     private JFrame frame;
     private Player player;
     private ClientManager client;
@@ -99,8 +102,9 @@ class BackgroundPanel extends JPanel {
                 .getScaledInstance(spaceshipWidth, spaceshipHeight, Image.SCALE_SMOOTH);
     
         zombieNoob = new ImageIcon(getClass().getResource("/image/Zombiefly_Noob.gif"));
+        zombieBoss = new ImageIcon(getClass().getResource("/image/ZombieBoss.gif"));
     
-        int amountZombie = 2; 
+        int amountZombie = 20; 
         zombies = new Zombie[amountZombie]; // Create an array for zombies
         Random random = new Random();
     
@@ -119,8 +123,10 @@ class BackgroundPanel extends JPanel {
             public void mousePressed(MouseEvent e) {
                 int spaceshipX = 0; // Position X of the spaceship
                 int spaceshipY = 50; // Position Y of the spaceship
-    
-                bullets.add(new Bullet(spaceshipX + spaceshipWidth, spaceshipY + spaceshipHeight / 2, e.getX(), e.getY())); 
+
+                client.drawBullet(spaceshipX + spaceshipWidth, spaceshipY + spaceshipHeight / 2, e.getX(), e.getY());
+
+                
             }
         });
     
@@ -136,6 +142,23 @@ class BackgroundPanel extends JPanel {
         });
     }
 
+    public void drawBullet(int x, int y, int tx, int ty)
+    {
+        
+        bullets.add(new Bullet(x, y, tx, ty)); 
+        playGunSound();
+    }
+
+    public void playGunSound() {
+        try {
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("/sound/shot.wav"));
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioInputStream);
+            clip.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -152,7 +175,12 @@ class BackgroundPanel extends JPanel {
         // loop วาดซอมบี้
         for (int i = 0; i < zombiesToShow; i++) {
             Zombie zombie = zombies[i];
-            g.drawImage(zombieNoob.getImage(), zombie.getPositionX(), zombie.getPositionY(), 105, 105, this);
+            if (i == 19)
+            {
+                g.drawImage(zombieBoss.getImage(), zombie.getPositionX(), zombie.getPositionY(), 105, 105, this);
+            }
+            else
+                g.drawImage(zombieNoob.getImage(), zombie.getPositionX(), zombie.getPositionY(), 105, 105, this);
 
             
         /*------------------------------- วาด หลอดเลือด Zombie ------------------------------------- */
@@ -182,6 +210,7 @@ class BackgroundPanel extends JPanel {
         for (Bullet bullet : bullets) {
             g.setColor(Color.YELLOW); // สีกระสุน
             g.fillRect(bullet.getX(), bullet.getY(), 5, 5); // วาดกระสุน
+            repaint();
         }
     }
         
@@ -277,7 +306,6 @@ class ZombieMover implements Runnable {
     public void run() {
         int targetX = 50;
         while (zombie.getPositionX() > targetX && zombie.getHealth() != 0) {
-            System.out.println("im ruNonf");
             zombie.setPosition(zombie.getPositionX() - 2, zombie.getPositionY()); 
             
             if (zombie.getPositionY() != possiblePositions[moveToId] && zombie.getPositionY() < possiblePositions[moveToId])

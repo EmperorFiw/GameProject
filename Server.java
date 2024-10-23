@@ -262,9 +262,9 @@ public class Server {
     public static void getTarget(Player player) {
         Random random = new Random();
         int count = player.getCountPlayer();
-        int[] targets = new int[20]; // สร้างอาเรย์สำหรับเก็บค่าเป้าหมาย 20 ค่า
+        int[] targets = new int[80]; // สร้างอาเรย์สำหรับเก็บค่าเป้าหมาย 80 ค่า
     
-        // สุ่มค่าเป้าหมาย 20 ครั้ง
+        // สุ่มค่าเป้าหมาย 80 ครั้ง
         for (int i = 0; i < targets.length; i++) {
             targets[i] = random.nextInt(count);
         }

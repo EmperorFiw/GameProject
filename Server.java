@@ -414,7 +414,10 @@ class ClientHandler implements Runnable {
                                     if (i == 4)
                                         i = 0;
                                     if (player.getInGame())
+                                    {
                                         running = false;
+                                        break;
+                                    }
 
                                     out.writeObject(0);  // ส่ง Integer
                                     out.writeObject(player.getName());  // ส่ง String
@@ -422,7 +425,8 @@ class ClientHandler implements Runnable {
                                     out.writeObject(player.getRoomID());  // ส่ง Integer
                                     out.writeObject(player.isOwner());  // ส่ง Boolean
                                     out.writeObject(i);  // ส่ง Integer
-                                    out.writeObject(player.getPlayerInRoomFromIndex(i));  // ส่ง String
+                                    out.writeObject(player.getPlayerInRoomFromIndex(i));
+                                    
                                     out.flush();
                                     i++;
                                 }
@@ -572,6 +576,7 @@ class ClientHandler implements Runnable {
     {
         try {
             out.writeObject(5);
+            out.writeObject(true);
             out.writeObject(rid);
             out.writeObject(game);
             out.flush();

@@ -2,18 +2,15 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.geom.AffineTransform;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.Iterator;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -109,13 +106,17 @@ class BackgroundPanel extends JPanel {
     
         int amountZombie = 20; 
         zombies = new Zombie[amountZombie]; // Create an array for zombies
-        Random random = new Random();
     
         // Loop random to find zombie positions
         for (int i = 0; i < amountZombie; i++) {
             int posX = 111 + 1000; // Random position X for zombies
             int posY = 160; // Can change as needed
-            zombies[i] = new Zombie(i, 100, posX, posY); // Create new zombie
+            if (i == 19 || i == 39 || i == 59 || i == 79)
+            {
+                zombies[i] = new Zombie(i, 150, posX, posY); // Create new zombie
+            } else {
+                zombies[i] = new Zombie(i, 100, posX, posY); // Create new zombie
+            }
         }
     
         new Thread(new ZombieSpawner(this, amountZombie, player, client)).start();
@@ -126,22 +127,24 @@ class BackgroundPanel extends JPanel {
             public void mousePressed(MouseEvent e) {
                 int spaceshipX = 0; // Position X of the spaceship
                 int spaceshipY = 50; // Position Y of the spaceship
+                int[] possiblePositions = {50, 210, 370, 530};
+                int playerShot = 0;
 
-                client.drawBullet(spaceshipX + spaceshipWidth, spaceshipY + spaceshipHeight / 2, e.getX(), e.getY());
+                for (int i =0;i<player.getCountPlayer();i++)
+                {
+                    if (player.getName() == player.getPlayerInRoomFromIndex(i))
+                    {
+                        playerShot = i;
+                        break;
+                    }
+                }
+                client.drawBullet(spaceshipX + spaceshipWidth, possiblePositions[playerShot] + spaceshipHeight / 2, e.getX(), e.getY());
                 
             }
         });
     
         // In the BackgroundPanel constructor
         new BulletMover(bullets, 30, this, client).start(); // Pass 'this' to the BulletMover
-
-    
-        addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                frame.setTitle("Zombie Hunter - Mouse at (" + e.getX() + ", " + e.getY() + ")");
-            }
-        });
     }
 
     public void drawBullet(int x, int y, int tx, int ty)
@@ -153,7 +156,7 @@ class BackgroundPanel extends JPanel {
 
     public void playGunSound() {
         try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("    "));
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("/sound/shot.wav"));
             Clip clip = AudioSystem.getClip();
             clip.open(audioInputStream);
             clip.start();
@@ -169,34 +172,24 @@ class BackgroundPanel extends JPanel {
         int spaceshipX = 30;
         int spaceshipY = 50;
         
-        Font font = new Font("Arial", Font.BOLD, 20);
+        Font font = new Font("Arial", Font.BOLD, 20); 
         g.setFont(font);
 
-        Graphics2D g2d = (Graphics2D) g; //โยนมาให้ g2d จัดการ
-        
+
         for (int i = 0; i < player.getCountPlayer(); i++) {
         
             g.drawImage(spaceshipImage, spaceshipX, spaceshipY, spaceshipWidth, spaceshipHeight, this);
-            spaceshipY += spaceshipWidth + spaceshipBetween;
-            
-/* ตัวหนังสือ */
-            String namePlayer = player.getPlayerInRoomFromIndex(i);
-            g2d.setColor(Color.WHITE);
+            g.setColor(Color.WHITE); // สีของชื่อ
 
-            g2d.translate(spaceshipX, spaceshipY); //ปรับตำแหน่ง x y 
-            g2d.rotate(Math.toRadians(90)); //ปรับองศาตัวหนังสือ
-            g2d.drawString(namePlayer, 0, 0); //วาดชื่อ ตำแหน่ง 0 0 
-            g2d.setTransform(new AffineTransform()); //reset ค่าทั้งหมด ไม่ให้กระทบกับการวาดอันอื่น
-            
-            
+            g.drawString(player.getPlayerInRoomFromIndex(i), spaceshipX +10, spaceshipY + spaceshipHeight + 10); //วาดชื่อ
 
-
+            spaceshipY += spaceshipWidth + spaceshipBetween; 
         }
 
         // loop วาดซอมบี้
         for (int i = 0; i < zombiesToShow; i++) {
             Zombie zombie = zombies[i];
-            if (i == 19)
+            if (i == 19 || i == 39 || i == 59 || i == 79)
             {
                 g.drawImage(zombieBoss.getImage(), zombie.getPositionX(), zombie.getPositionY(), 105, 105, this);
             }
@@ -226,12 +219,12 @@ class BackgroundPanel extends JPanel {
             g.drawRect(HealthX, HealthY, currentHealt, HealtBarHeigth); //วาดหลอดเลือด
 
         }
-
-        // วาดกระสุน
-        for (Bullet bullet : bullets) {
-            g.setColor(Color.YELLOW); // สีกระสุน
-            g.fillRect(bullet.getX(), bullet.getY(), 5, 5); // วาดกระสุน
-            repaint();
+        //วาดกระสุน
+        synchronized (bullets) {
+            for (Bullet bullet : bullets) {
+                g.setColor(Color.YELLOW); // สีกระสุน
+                g.fillRect(bullet.getX(), bullet.getY(), 5, 5); // วาดกระสุน
+            }
         }
     }
         
@@ -411,6 +404,7 @@ class BulletMover extends Thread {
     private final long sleepTime;
     private BackgroundPanel panel; // Reference to BackgroundPanel for collision detection
     private ClientManager client;
+    private int zombieDeath = 0;
 
     public BulletMover(ArrayList<Bullet> bullets, long sleepTime, BackgroundPanel panel, ClientManager client) {
         this.bullets = bullets;
@@ -420,44 +414,48 @@ class BulletMover extends Thread {
     }
 
     @Override
-public void run() {
-    while (true) {
-        synchronized (bullets) {  // เพิ่มการซิงโครไนซ์
-            for (int i = 0; i < bullets.size(); i++) {
-                Bullet bullet = bullets.get(i);
-                if (bullet.isActive()) {
-                    bullet.move(); // Move the bullet
+    public void run() {
+        while (true) {
+            synchronized (bullets) {  // เพิ่มการซิงโครไนซ์
+                Iterator<Bullet> iterator = bullets.iterator();
+                while (iterator.hasNext()) {
+                    Bullet bullet = iterator.next();
+                    if (bullet.isActive()) {
+                        bullet.move(); // Move the bullet
 
-                    // Check collision with zombies
-                    for (Zombie zombie : panel.getZombies()) {
-                        if (bullet.checkCollision(zombie)) {
-                            synchronized (zombie) {  // ซิงโครไนซ์การเข้าถึงข้อมูลซอมบี้
-                                zombie.setHealth(zombie.getHealth() - 15); // Decrease zombie health
-                                client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
-
-                                if (zombie.getHealth() <= 0) {
-                                    zombie.setPosition(-100, -100); // Hide dead zombie
+                        // Check collision with zombies
+                        for (Zombie zombie : panel.getZombies()) {
+                            if (bullet.checkCollision(zombie)) {
+                                synchronized (zombie) {  // ซิงโครไนซ์การเข้าถึงข้อมูลซอมบี้
+                                    zombie.setHealth(zombie.getHealth() - 15); // Decrease zombie health
                                     client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
+
+                                    if (zombie.getHealth() <= 0) {
+                                        zombie.setPosition(-100, -100); // Hide dead zombie
+                                        client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
+                                        zombieDeath++;
+                                        if (zombieDeath == 80) {
+                                            System.out.println("Zombie Death All");
+                                        }
+                                    }
                                 }
+                                bullet.setActive(false); // Deactivate bullet
+                                break;
                             }
-                            bullet.setActive(false); // Deactivate bullet
-                            break;
                         }
+                    } else {
+                        iterator.remove(); // ใช้ iterator ในการลบกระสุนที่ไม่ใช้งาน
                     }
                 }
             }
 
-            // Remove inactive bullets
-            bullets.removeIf(bullet -> !bullet.isActive());
-        }
-
-        try {
-            Thread.sleep(sleepTime); // Delay for 30 ms
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Handle thread interruption
-            break; // Exit loop if interrupted
+            try {
+                Thread.sleep(sleepTime); // Delay for 30 ms
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Handle thread interruption
+                break; // Exit loop if interrupted
+            }
         }
     }
-}
 
 }

@@ -33,6 +33,14 @@ public class Zombie implements Serializable {
         return positionY;
     }
 
+    public boolean isDeath()
+    {
+        if (getHealth() <= 0)
+            return true;
+
+        return false;
+    }
+
     public void setPosition(int positionX, int positionY) {
         this.positionX = positionX;
         this.positionY = positionY;

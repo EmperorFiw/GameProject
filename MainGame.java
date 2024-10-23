@@ -75,7 +75,17 @@ class ClientManager {
                             switch (commandId) {
                                 case 0: //รับข้อมูลผู้เล่น
                                     if (player.getInGame())
-                                        continue;
+                                    {
+                                        // อ่านข้อมูลทิ้งโดยไม่ทำอะไรกับมัน
+                                        in.readObject(); // ข้าม String หรือ Object ที่ถูกส่งมา
+                                        in.readObject(); // ข้าม Integer
+                                        in.readObject(); // ข้าม Integer หรือข้อมูลอื่น ๆ ที่ส่งมา
+                                        in.readObject(); // ข้าม String หรือ Object ที่ถูกส่งมา
+                                        in.readObject(); // ข้าม Integer
+                                        in.readObject(); // ข้าม Integer หรือข้อมูลอื่น ๆ ที่ส่งมา
+                                        System.out.println("Discarded case 1 data, player is in game.");
+                                        break;
+                                    }
                                     String name = (String) in.readObject();  // อ่าน String
                                     int playerId = (int) in.readObject();  // อ่าน Integer
                                     int roomId = (int) in.readObject();  // อ่าน Integer
@@ -125,11 +135,13 @@ class ClientManager {
                                         mf.disRFrame();
                                     break;
                                 case 5:
+                                    Boolean isInGame = (Boolean) in.readObject();  // อ่าน Boolean
                                     Integer roomID = (Integer) in.readObject();
                                     Object gameObject = in.readObject();
 
                                     if (player.getRoomID() == roomID)
                                     {
+                                        this.player.setInGame(isInGame);
                                         if (gameObject instanceof Game) {
                                             this.game = (Game) gameObject; // แปลงเป็น Game
                                             sendStartGame();
@@ -151,6 +163,7 @@ class ClientManager {
                                         int[] zdata = (int[]) in.readObject();
                                         synchronized (panelgdata) {  // ซิงโครไนซ์การอัปเดตข้อมูลซอมบี้
                                             panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
+
                                         }
                                     } else if (typeGame.equals("Bullet")) {
                                         int[] bdata = (int[]) in.readObject();
@@ -254,11 +267,15 @@ class ClientManager {
         }
     }
 
-    public void sendStartGame()
-    {
+    public void sendStartGame() {
+        try {
+            Thread.sleep(1000); // หน่วงเวลา 1 วินาที
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // จัดการกับการถูกระงับ
+        }
         game.startGame(player, this);
     }
-
+    
     public synchronized void getTarget()
     {
         try {

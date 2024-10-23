@@ -104,7 +104,7 @@ class BackgroundPanel extends JPanel {
         zombieNoob = new ImageIcon(getClass().getResource("/image/Zombiefly_Noob.gif"));
         zombieBoss = new ImageIcon(getClass().getResource("/image/ZombieBoss.gif"));
     
-        int amountZombie = 20; 
+        int amountZombie = 80; 
         zombies = new Zombie[amountZombie]; // Create an array for zombies
     
         // Loop random to find zombie positions

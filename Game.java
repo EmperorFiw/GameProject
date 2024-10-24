@@ -375,7 +375,7 @@ class Bullet {
             // คำนวณอัตราส่วนการเคลื่อนที่
             moveToX = (deltaX / distance) * 10; // 10 คือความเร็ว
             moveToY = (deltaY / distance) * 10; // 10 คือความเร็ว
-             isCal = true;
+            isCal = true;
         }
 
         // อัปเดตตำแหน่ง

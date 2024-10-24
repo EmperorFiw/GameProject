@@ -109,7 +109,7 @@ class BackgroundPanel extends JPanel {
     
         // Loop random to find zombie positions
         for (int i = 0; i < amountZombie; i++) {
-            int posX = 111 + 1000; // Random position X for zombies
+            int posX = 111 + 1250; // Random position X for zombies
             int posY = 160; // Can change as needed
             if (i == 19 || i == 39 || i == 59 || i == 79)
             {
@@ -288,7 +288,7 @@ class ZombieSpawner implements Runnable {
                 needTarget = false;
             }
             try {
-                Thread.sleep(2000); // รอ 1.5 วินาที
+                Thread.sleep(1200); // รอ 1.5 วินาที
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

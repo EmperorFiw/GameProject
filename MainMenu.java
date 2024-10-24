@@ -203,7 +203,8 @@ class CreateRoomFrame extends JFrame {
         bgframe.setLayout(new GridBagLayout());
 
         panelcenter.setPreferredSize(new Dimension(590, 620));
-        panelcenter.setBackground(new Color(215, 201, 255));
+        panelcenter.setBackground(new Color(215, 201, 255, 150)); // ตั้งค่าให้สีโปร่งใสบางส่วน (alpha 150)
+        panelcenter.setOpaque(true); // ทำให้ panelcenter โปร่งใส
         panelcenter.setLayout(new GridBagLayout());
 
         // ====================== สร้าง JLabel สำหรับแสดง Room ID ======================
@@ -337,7 +338,7 @@ class CreateRoomFrame extends JFrame {
         private Image bgfromImage;
 
         BackgroundPanel() {
-            bgfromImage = new ImageIcon(getClass().getResource("/image/BackG.png")).getImage();
+            bgfromImage = new ImageIcon(getClass().getResource("/image/BackgroundWait.gif")).getImage();
         }
 
         @Override

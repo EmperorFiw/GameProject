@@ -138,7 +138,9 @@ class BackgroundPanel extends JPanel {
                         break;
                     }
                 }
-                client.drawBullet(spaceshipX + spaceshipWidth, possiblePositions[playerShot] + spaceshipHeight / 2, e.getX(), e.getY());
+                synchronized (bullets) {
+                    client.drawBullet(spaceshipX + spaceshipWidth, possiblePositions[playerShot] + spaceshipHeight / 2, e.getX(), e.getY());
+                }
                 
             }
         });
@@ -149,8 +151,9 @@ class BackgroundPanel extends JPanel {
 
     public void drawBullet(int x, int y, int tx, int ty)
     {
-        
-        bullets.add(new Bullet(x, y, tx, ty)); 
+        synchronized (bullets) {
+            bullets.add(new Bullet(x, y, tx, ty)); 
+        }
         playGunSound();
     }
 
@@ -218,6 +221,12 @@ class BackgroundPanel extends JPanel {
             g.setColor(Color.BLACK); //ขอบของหลอดเลือด
             g.drawRect(HealthX, HealthY, currentHealt, HealtBarHeigth); //วาดหลอดเลือด
 
+        }
+        synchronized (bullets) {  // Synchronize access to the bullets list
+            for (Bullet bullet : bullets) {
+                g.setColor(Color.YELLOW); // สีกระสุน
+                g.fillRect(bullet.getX(), bullet.getY(), 5, 5); // วาดกระสุน
+            }
         }
         //วาดกระสุน
         synchronized (bullets) {
@@ -402,60 +411,65 @@ class Bullet {
 class BulletMover extends Thread {
     private final ArrayList<Bullet> bullets; 
     private final long sleepTime;
-    private BackgroundPanel panel; // Reference to BackgroundPanel for collision detection
+    private BackgroundPanel panel; 
     private ClientManager client;
     private int zombieDeath = 0;
+    private volatile boolean running = true;
+    private static final int HIDDEN_POSITION = -100;
 
     public BulletMover(ArrayList<Bullet> bullets, long sleepTime, BackgroundPanel panel, ClientManager client) {
         this.bullets = bullets;
         this.sleepTime = sleepTime;
-        this.panel = panel; // Store reference to BackgroundPanel
+        this.panel = panel; 
         this.client = client;
+    }
+
+    public void stopMoving() {
+        running = false;
+        this.interrupt(); // Interrupt if sleeping
     }
 
     @Override
     public void run() {
-        while (true) {
-            synchronized (bullets) {  // เพิ่มการซิงโครไนซ์
+        while (running) {
+            synchronized (bullets) {
                 Iterator<Bullet> iterator = bullets.iterator();
                 while (iterator.hasNext()) {
                     Bullet bullet = iterator.next();
                     if (bullet.isActive()) {
-                        bullet.move(); // Move the bullet
+                        bullet.move();
 
-                        // Check collision with zombies
-                        for (Zombie zombie : panel.getZombies()) {
-                            if (bullet.checkCollision(zombie)) {
-                                synchronized (zombie) {  // ซิงโครไนซ์การเข้าถึงข้อมูลซอมบี้
-                                    zombie.setHealth(zombie.getHealth() - 15); // Decrease zombie health
+                        synchronized (panel.getZombies()) { // Synchronize the list of zombies
+                            for (Zombie zombie : panel.getZombies()) {
+                                if (bullet.checkCollision(zombie)) {
+                                    zombie.setHealth(zombie.getHealth() - 15);
                                     client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
 
                                     if (zombie.getHealth() <= 0) {
-                                        zombie.setPosition(-100, -100); // Hide dead zombie
+                                        zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
                                         client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
                                         zombieDeath++;
                                         if (zombieDeath == 80) {
                                             System.out.println("Zombie Death All");
                                         }
                                     }
+                                    bullet.setActive(false); // Deactivate bullet
+                                    break;
                                 }
-                                bullet.setActive(false); // Deactivate bullet
-                                break;
                             }
                         }
                     } else {
-                        iterator.remove(); // ใช้ iterator ในการลบกระสุนที่ไม่ใช้งาน
+                        iterator.remove(); // Remove inactive bullet
                     }
                 }
             }
 
             try {
-                Thread.sleep(sleepTime); // Delay for 30 ms
+                Thread.sleep(sleepTime);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // Handle thread interruption
-                break; // Exit loop if interrupted
+                Thread.currentThread().interrupt(); // Restore interrupted status
+                break;
             }
         }
     }
-
 }

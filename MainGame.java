@@ -53,7 +53,7 @@ class ClientManager {
 
     public void connectToServer() {
         try {
-            socket = new Socket("localhost", 7777);
+            socket = new Socket("191.96.92.112", 7777);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 

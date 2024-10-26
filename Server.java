@@ -384,6 +384,7 @@ class ClientHandler implements Runnable {
                                 if (typeGame.equals("Zombie"))
                                 {
                                     int[] zdata = (int[]) in.readObject(); 
+                                    System.out.println("get hp: "+zdata[3]);
                                     Server.sendzData(zdata);
                                 }
                                 else if (typeGame.equals("Bullet"))

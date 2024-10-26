@@ -209,9 +209,9 @@ class BackgroundPanel extends JPanel {
             int HealthY = zombie.getPositionY() - 12; // position ให้มันตำแหน่งเดัยวกับ zombie
 
         //ปรับสีของหลอดเลือด ตาม hp ที่เหลือ
-            if (currentHealt > 50) {
+            if (currentHealt > 65) {
                 g.setColor(Color.GREEN); 
-            } else if (currentHealt > 25) {
+            } else if (currentHealt > 30) {
                 g.setColor(Color.YELLOW); 
             } else {
                 g.setColor(Color.RED); 
@@ -239,15 +239,15 @@ class BackgroundPanel extends JPanel {
         
 
     public void updateZombie(int index, int newPositionX, int newPositionY, int hp) {
-        if (index < zombies.length) {
+        if (index < 80) {
             zombies[index].setPosition(newPositionX, newPositionY); // อัปเดตตำแหน่งซอมบี้
-            zombies[index].setHealth(hp);
+            //zombies[index].setHealth(hp);
             repaint();
         }
     }
 
     public void showNextZombie() {
-        if (zombiesToShow < zombies.length) {
+        if (zombiesToShow < 80) {
             zombiesToShow++;
             repaint();
         }
@@ -273,7 +273,8 @@ class BackgroundPanel extends JPanel {
 
     public void hideBG()
     {
-        setVisible(false);
+        System.out.println("Winer44444444444444444444444444444444444444444");
+        //setVisible(false);
     }
     
 }
@@ -308,7 +309,6 @@ class ZombieSpawner implements Runnable {
             }
             panel.showNextZombie(); // แสดงซอมบี้ตัวถัดไป
             ZombieMover zombieMover = new ZombieMover(panel.getZombies()[i], panel, panel.getTarget(i), client); // ใช้ getZombies() เพื่อเข้าถึง
-            // System.out.println(panel.getTarget());
             new Thread(zombieMover).start();
         }
     }
@@ -418,7 +418,7 @@ class BulletMover extends Thread {
     private final long sleepTime;
     private BackgroundPanel panel; 
     private ClientManager client;
-    private int zombieDeath = 0;
+    private int zombieDeath = 1;
     private volatile boolean running = true;
     private static final int HIDDEN_POSITION = -100;
 
@@ -434,6 +434,10 @@ class BulletMover extends Thread {
         this.interrupt(); // Interrupt if sleeping
     }
 
+
+
+
+    ////////////////////////////////////////////////    ลองเช็ค method นี้
     @Override
     public void run() {
         while (running) {
@@ -446,20 +450,31 @@ class BulletMover extends Thread {
 
                         synchronized (panel.getZombies()) { // Synchronize the list of zombies
                             for (Zombie zombie : panel.getZombies()) {
-                                if (bullet.checkCollision(zombie)) {
-                                    zombie.setHealth(zombie.getHealth() - 15);
-                                    client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath);
-
-                                    if (zombie.getHealth() <= 0) {
-                                        zombieDeath++;
-                                        zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
-                                        client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath);
-                                       /*if (zombieDeath == 80) {
-                                            System.out.println("Zombie Death All");
-                                        }*/
+                                boolean shotZombie = false;
+                                if (zombie.getHealth() > 0)
+                                {
+                                    boolean isZombieDead = false;
+                                    if (bullet.checkCollision(zombie)) {
+                                        
+                                        bullet.setActive(false);
+                                        iterator.remove();
+                                        zombie.setHealth(zombie.getHealth() - 50);
+                                    
+                                        if (zombie.getHealth() <= 0 && !isZombieDead) {
+                                            zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
+                                            zombieDeath++;
+                                            System.out.println(zombieDeath);
+                                            client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath, 1);
+                                            System.out.println("sendif" + zombie.getHealth());
+                                            isZombieDead = true; // กำหนดสถานะให้รู้ว่าซอมบี้ตายแล้ว
+                                        } else if (!isZombieDead && !shotZombie) {
+                                            client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath, 0);
+                                            System.out.println("sendelse" + zombie.getHealth());
+                                            shotZombie = true;
+                                        }
+                                        break; // ออกจากลูปหลังจากพบการชน
                                     }
-                                    bullet.setActive(false); // Deactivate bullet
-                                    break;
+                                    shotZombie = false;
                                 }
                             }
                         }

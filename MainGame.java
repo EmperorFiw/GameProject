@@ -54,7 +54,7 @@ class ClientManager {
 
     public void connectToServer() {
         try {
-            socket = new Socket("191.96.92.112", 7777);
+            socket = new Socket("localhost", 7777);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
@@ -165,7 +165,7 @@ class ClientManager {
                                         int[] zdata = (int[]) in.readObject();
                                         synchronized (panelgdata) {  // ซิงโครไนซ์การอัปเดตข้อมูลซอมบี้
                                             panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
-                                            if (zdata.length > 4 && zdata[4] == 80)
+                                            if (zdata.length > 4 && zdata[4] >= 80)
                                             {
                                                 victory();
                                             }
@@ -292,14 +292,15 @@ class ClientManager {
         }
     }
 
-    public synchronized void sendUpdateZP(int zid, int zpX, int zpY, int hp, int deathCount)
+    public synchronized void sendUpdateZP(int zid, int zpX, int zpY, int hp, int deathCount, int isDeath)
     {
         int[] zdata = new int[5];
         zdata[0] = zid;
         zdata[1] = zpX;
         zdata[2] = zpY;
         zdata[3] = hp;
-        zdata[4] = deathCount;
+        if (isDeath == 1)
+            zdata[4] = deathCount;
         try {
             out.writeObject(6);
             out.writeObject("Zombie");

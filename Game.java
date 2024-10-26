@@ -270,6 +270,11 @@ class BackgroundPanel extends JPanel {
         this.target = targetid; // ตั้งค่าให้ตัวแปร target
         return this.target; // ส่งกลับอาเรย์ของเป้าหมาย
     }
+
+    public void hideBG()
+    {
+        setVisible(false);
+    }
     
 }
 
@@ -443,15 +448,15 @@ class BulletMover extends Thread {
                             for (Zombie zombie : panel.getZombies()) {
                                 if (bullet.checkCollision(zombie)) {
                                     zombie.setHealth(zombie.getHealth() - 15);
-                                    client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
+                                    client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath);
 
                                     if (zombie.getHealth() <= 0) {
-                                        zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
-                                        client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth());
                                         zombieDeath++;
-                                        if (zombieDeath == 80) {
+                                        zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
+                                        client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath);
+                                       /*if (zombieDeath == 80) {
                                             System.out.println("Zombie Death All");
-                                        }
+                                        }*/
                                     }
                                     bullet.setActive(false); // Deactivate bullet
                                     break;

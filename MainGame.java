@@ -40,6 +40,7 @@ class ClientManager {
     private Socket socket;
     private Player player; // เพิ่มตัวแปร Player
     private Game game;
+    private BackgroundPanel panelGame;
 
 
     public void setFrameObject(menuFrame mf) {
@@ -158,11 +159,16 @@ class ClientManager {
                                 case 7:
                                     String typeGame = (String) in.readObject();
                                     BackgroundPanel panelgdata = game.getPanelObject();
+                                    this.panelGame = panelgdata;
                                 
                                     if (typeGame.equals("Zombie")) {
                                         int[] zdata = (int[]) in.readObject();
                                         synchronized (panelgdata) {  // ซิงโครไนซ์การอัปเดตข้อมูลซอมบี้
                                             panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
+                                            if (zdata[4] == 80)
+                                            {
+                                                victory();
+                                            }
 
                                         }
                                     } else if (typeGame.equals("Bullet")) {
@@ -286,13 +292,14 @@ class ClientManager {
         }
     }
 
-    public synchronized void sendUpdateZP(int zid, int zpX, int zpY, int hp)
+    public synchronized void sendUpdateZP(int zid, int zpX, int zpY, int hp, int deathCount)
     {
         int[] zdata = new int[4];
         zdata[0] = zid;
         zdata[1] = zpX;
         zdata[2] = zpY;
         zdata[3] = hp;
+        zdata[4] = deathCount;
         try {
             out.writeObject(6);
             out.writeObject("Zombie");
@@ -318,5 +325,9 @@ class ClientManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void victory() {
+        panelGame.hideBG();
     }
 }

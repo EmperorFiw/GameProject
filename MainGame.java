@@ -294,7 +294,7 @@ class ClientManager {
 
     public synchronized void sendUpdateZP(int zid, int zpX, int zpY, int hp, int deathCount)
     {
-        int[] zdata = new int[4];
+        int[] zdata = new int[5];
         zdata[0] = zid;
         zdata[1] = zpX;
         zdata[2] = zpY;

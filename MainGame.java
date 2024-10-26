@@ -165,7 +165,7 @@ class ClientManager {
                                         int[] zdata = (int[]) in.readObject();
                                         synchronized (panelgdata) {  // ซิงโครไนซ์การอัปเดตข้อมูลซอมบี้
                                             panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
-                                            if (zdata[4] == 80)
+                                            if (zdata.length > 4 && zdata[4] == 80)
                                             {
                                                 victory();
                                             }

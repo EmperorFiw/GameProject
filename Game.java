@@ -1,9 +1,13 @@
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -15,10 +19,13 @@ import java.util.Iterator;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
-
 public class Game implements Serializable {
     private static final long serialVersionUID = 1L;
     private Gamepage gamePage; // สร้างตัวแปร gamePage ที่เก็บอ้างอิง
@@ -270,10 +277,62 @@ class BackgroundPanel extends JPanel {
         this.target = targetid; // ตั้งค่าให้ตัวแปร target
         return this.target; // ส่งกลับอาเรย์ของเป้าหมาย
     }
+    
+    public void showGameOverDialog(JFrame parentFrame, MainMenu menu) {
+        // สร้าง JDialog ที่ทับหน้าต่างหลัก
+        JDialog dialog = new JDialog(parentFrame, "END GAME", true);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setSize(800, 600); // กำหนดขนาดของ JDialog
+        dialog.setLocationRelativeTo(parentFrame); // ให้อยู่ตรงกลางของหน้าต่างหลัก
+        dialog.setUndecorated(true); // ซ่อนขอบหน้าต่าง
+    
+        // ตั้งค่าแบ็กกราวด์ GIF
+        ImageIcon gifIcon = new ImageIcon("image/end.gif");
+        JLabel backgroundLabel = new JLabel(gifIcon);
+        
+        // กำหนด layout ให้ JLabel ขยายเต็มขอบ
+        backgroundLabel.setLayout(new BorderLayout());
+        dialog.setContentPane(backgroundLabel);
+        
+        // ปรับขนาดของ backgroundLabel ให้เต็ม JDialog
+        backgroundLabel.setBounds(0, 0, dialog.getWidth(), dialog.getHeight());
 
-    public void hideBG()
+        // ปุ่ม "OK"
+        JButton okButton = new JButton("OK");
+        okButton.setFont(new Font("Arial", Font.PLAIN, 20));
+        okButton.setBackground(new Color(70, 130, 180));
+        okButton.setForeground(Color.WHITE);
+        okButton.setFocusPainted(false);
+        okButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        okButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    
+        okButton.setContentAreaFilled(false);
+        okButton.setOpaque(true);
+        okButton.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 0), 10, true));
+    
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+                menu.showMainMenu(true, client);
+            }
+        });
+    
+        // สร้าง JPanel สำหรับปุ่ม OK และทำให้โปร่งใส
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(okButton);
+        backgroundLabel.add(buttonPanel, BorderLayout.SOUTH);
+    
+        dialog.setVisible(true); // แสดง JDialog
+    }
+
+    public void hideBG(MainMenu menu)
     {
         System.out.println("Winer44444444444444444444444444444444444444444");
+
+        // แสดง dialog เกมโอเวอร์
+        showGameOverDialog(this.frame, menu);
         //setVisible(false);
     }
     
@@ -457,7 +516,7 @@ class BulletMover extends Thread {
                                         iterator.remove();
     
                                         // ลดเลือดของซอมบี้ลง 50
-                                        zombie.setHealth(zombie.getHealth() - 50);
+                                        zombie.setHealth(zombie.getHealth() - 15);
     
                                         if (zombie.getHealth() <= 0) {
                                             // ถ้าซอมบี้ตาย กำหนดให้ซอมบี้อยู่ในตำแหน่งซ่อนและนับการตายของซอมบี้

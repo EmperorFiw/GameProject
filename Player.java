@@ -6,7 +6,6 @@ public class Player implements Serializable {
     private int roomID;
     private boolean isOwner = false;
     private int playerHealth = 100;
-    private int playerDamage = 20;
     private boolean isInGame = false;
     private String[] allPlayerInRoom = {"Empty", "Empty", "Empty", "Empty"}; // แก้ไขให้เป็น String[]
 

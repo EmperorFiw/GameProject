@@ -24,9 +24,9 @@ public class MainGame {
         client.connectToServer();
 
         menuFrame mf = new menuFrame(client);  // สร้าง menuFrame
-        client.setFrameObject(mf);
         MainMenu menu = new MainMenu();
         menu.showMainMenu(true, client);
+        client.SendObject(mf, menu);
         
 
     }
@@ -36,15 +36,16 @@ class ClientManager {
     private menuFrame mf;
     private ObjectOutputStream out;
     private ObjectInputStream in;
-    private MainMenu mainmenu;
+    private MainMenu menu;
     private Socket socket;
     private Player player; // เพิ่มตัวแปร Player
     private Game game;
     private BackgroundPanel panelGame;
 
 
-    public void setFrameObject(menuFrame mf) {
+    public void SendObject(menuFrame mf, MainMenu menu) {
         this.mf = mf;
+        this.menu = menu;
     }
 
     public void setPlayer(Player player)
@@ -165,7 +166,7 @@ class ClientManager {
                                         int[] zdata = (int[]) in.readObject();
                                         synchronized (panelgdata) {  // ซิงโครไนซ์การอัปเดตข้อมูลซอมบี้
                                             panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
-                                            if (zdata.length > 4 && zdata[4] >= 80)
+                                            if (zdata.length > 4 && zdata[4] >= 1)
                                             {
                                                 victory();
                                             }
@@ -329,6 +330,6 @@ class ClientManager {
     }
 
     public void victory() {
-        panelGame.hideBG();
+        panelGame.hideBG(menu);
     }
 }

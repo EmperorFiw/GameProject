@@ -418,7 +418,7 @@ class BulletMover extends Thread {
     private final long sleepTime;
     private BackgroundPanel panel; 
     private ClientManager client;
-    private int zombieDeath = 1;
+    private int zombieDeath = 0;
     private volatile boolean running = true;
     private static final int HIDDEN_POSITION = -100;
 
@@ -447,34 +447,40 @@ class BulletMover extends Thread {
                     Bullet bullet = iterator.next();
                     if (bullet.isActive()) {
                         bullet.move();
-
+    
                         synchronized (panel.getZombies()) { // Synchronize the list of zombies
                             for (Zombie zombie : panel.getZombies()) {
-                                boolean shotZombie = false;
-                                if (zombie.getHealth() > 0)
-                                {
-                                    boolean isZombieDead = false;
+                                if (zombie.getHealth() > 0) {
+                                    boolean shotZombie = false;
                                     if (bullet.checkCollision(zombie)) {
-                                        
                                         bullet.setActive(false);
                                         iterator.remove();
+    
+                                        // ลดเลือดของซอมบี้ลง 50
                                         zombie.setHealth(zombie.getHealth() - 50);
-                                    
-                                        if (zombie.getHealth() <= 0 && !isZombieDead) {
-                                            zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
+    
+                                        if (zombie.getHealth() <= 0) {
+                                            // ถ้าซอมบี้ตาย กำหนดให้ซอมบี้อยู่ในตำแหน่งซ่อนและนับการตายของซอมบี้
                                             zombieDeath++;
                                             System.out.println(zombieDeath);
+                                            
+                                            // ส่งสถานะการอัพเดตซอมบี้ตายไปที่เซิร์ฟเวอร์
                                             client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath, 1);
                                             System.out.println("sendif" + zombie.getHealth());
-                                            isZombieDead = true; // กำหนดสถานะให้รู้ว่าซอมบี้ตายแล้ว
-                                        } else if (!isZombieDead && !shotZombie) {
-                                            client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath, 0);
-                                            System.out.println("sendelse" + zombie.getHealth());
-                                            shotZombie = true;
+                                            zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
+                                        } else {
+                                            // ถ้าซอมบี้ยังไม่ตายแต่ถูกยิง
+                                            if (!shotZombie) {
+                                                client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath, 0);
+                                                System.out.println("sendelse" + zombie.getHealth());
+                                                shotZombie = true; // ป้องกันการส่งข้อมูลซ้ำจากกระสุนตัวเดียวกัน
+                                            }
                                         }
                                         break; // ออกจากลูปหลังจากพบการชน
                                     }
-                                    shotZombie = false;
+                                } else if (zombie.getPositionX() != -100) {
+                                    // ซ่อนตำแหน่งของซอมบี้ที่ไม่มีเลือด
+                                    zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
                                 }
                             }
                         }
@@ -483,7 +489,7 @@ class BulletMover extends Thread {
                     }
                 }
             }
-
+    
             try {
                 Thread.sleep(sleepTime);
             } catch (InterruptedException e) {
@@ -492,4 +498,4 @@ class BulletMover extends Thread {
             }
         }
     }
-}
+}    

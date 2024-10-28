@@ -5,6 +5,7 @@ public class Zombie implements Serializable {
     private int health;
     private int positionX;
     private int positionY;
+    
 
     public Zombie(int id, int initialHealth, int positionX, int positionY) {
         this.id = id;

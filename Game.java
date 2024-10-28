@@ -287,9 +287,11 @@ class BackgroundPanel extends JPanel {
         dialog.setUndecorated(true); // ซ่อนขอบหน้าต่าง
     
         // ตั้งค่าแบ็กกราวด์ GIF
-        ImageIcon gifIcon = new ImageIcon("image/end.gif");
-        JLabel backgroundLabel = new JLabel(gifIcon);
-        
+        ImageIcon gifIcon = new ImageIcon("image/end.gif"); //ดึงมาเก็บไว้ใน gifIcon
+        Image scaledImage = gifIcon.getImage().getScaledInstance(dialog.getWidth(), dialog.getHeight(), Image.SCALE_DEFAULT); //ปรับขนาดของภาพ = dialog
+        ImageIcon scaledGifIcon = new ImageIcon(scaledImage); //size ใหม่ของภาพ 
+        JLabel backgroundLabel = new JLabel(scaledGifIcon); //เอาลงไปใน jlabel
+
         // กำหนด layout ให้ JLabel ขยายเต็มขอบ
         backgroundLabel.setLayout(new BorderLayout());
         dialog.setContentPane(backgroundLabel);

@@ -168,7 +168,11 @@ class ClientManager {
                                             panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
                                             if (zdata.length > 4 && zdata[4] >= 1)
                                             {
-                                                victory();
+                                                if (!player.isGameOver())
+                                                {
+                                                    victory();
+                                                    player.setGameOver(true);
+                                                }
                                             }
 
                                         }

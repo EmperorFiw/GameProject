@@ -6,8 +6,6 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -83,6 +81,7 @@ class Gamepage {
         if (!isDestroy){
             isDestroy = true;
             frame.setVisible(false);
+            player.setGameOver(false);
         }
     }
 }
@@ -97,6 +96,7 @@ class BackgroundPanel extends JPanel {
     private ClientManager client;
     private Gamepage gpage;
     private int[] target; 
+    private JDialog dialog; // ตัวแปร dialog สำหรับเก็บสถานะ JDialog
     
     private ArrayList<Bullet> bullets; // เก็บกระสุนทั้งหมด
 
@@ -290,6 +290,10 @@ class BackgroundPanel extends JPanel {
     }
     
     public void showGameOverDialog(JFrame parentFrame, MainMenu menu) {
+        if (dialog != null && dialog.isVisible()) {
+            // ถ้า dialog ถูกสร้างและแสดงอยู่แล้ว ไม่ต้องแสดงซ้ำ
+            return;
+        }
         // สร้าง JDialog ที่ทับหน้าต่างหลัก
         JDialog dialog = new JDialog(parentFrame, "END GAME", true);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -323,10 +327,12 @@ class BackgroundPanel extends JPanel {
         okButton.setOpaque(true);
         okButton.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 0), 10, true));
     
-        okButton.addActionListener(new ActionListener() {
+        okButton.addMouseListener(new MouseAdapter() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void mouseClicked(MouseEvent e) {
+                dialog.setVisible(false);
                 dialog.dispose();
+                gpage.destroy();
                 menu.showMainMenu(true, client);
             }
         });
@@ -343,10 +349,7 @@ class BackgroundPanel extends JPanel {
     public void hideBG(MainMenu menu)
     {
         System.out.println("Winer44444444444444444444444444444444444444444");
-
-        // แสดง dialog เกมโอเวอร์
         showGameOverDialog(this.frame, menu);
-        gpage.destroy();
     }
     
 }

@@ -7,6 +7,7 @@ public class Player implements Serializable {
     private boolean isOwner = false;
     private int playerHealth = 100;
     private boolean isInGame = false;
+    private boolean isGameOver = false;
     private String[] allPlayerInRoom = {"Empty", "Empty", "Empty", "Empty"}; // แก้ไขให้เป็น String[]
 
 
@@ -104,6 +105,15 @@ public class Player implements Serializable {
         return this.isInGame;
     }
 
+    public Boolean isGameOver()
+    {
+        return this.isGameOver;
+    }
+
+    public void setGameOver(boolean isOver)
+    {
+        this.isGameOver = isOver;
+    }
     @Override
     public String toString() {
         return "Player{name='" + name + "', id=" + id + ", roomID=" + roomID + ", isOwner=" + isOwner + "}";

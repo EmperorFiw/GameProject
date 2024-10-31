@@ -261,8 +261,8 @@ class CreateRoomFrame extends JFrame {
                 }
                 else
                 {
-                    client.startGame(CreateRoomFrame.this, player.getRoomID());
-                    /*int countPlayer = 0;
+                    //client.startGame(CreateRoomFrame.this, player.getRoomID());
+                    int countPlayer = 0;
                     for (int i=0;i<4;i++)
                     {
                         if (player.getPlayerInRoomFromIndex(i).equals("Empty"))
@@ -273,10 +273,10 @@ class CreateRoomFrame extends JFrame {
                         countPlayer++ ;
                     }
                     
-                    if (countPlayer == 4)
+                    if (countPlayer >= 4)
                     {
                         client.startGame(CreateRoomFrame.this, player.getRoomID());
-                    }*/
+                    }
                 }
             }
         });

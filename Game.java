@@ -44,6 +44,7 @@ class Gamepage {
     private JFrame frame;
     private Player player;
     private BackgroundPanel  panel;
+    private boolean isDestroy = false;
     Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
     Gamepage(Player player, ClientManager client) {
@@ -55,7 +56,7 @@ class Gamepage {
         frame.setLocationRelativeTo(null);
 
         // panel of Background
-        panel = new BackgroundPanel(frame, player, client);
+        panel = new BackgroundPanel(frame, player, client, this);
         panel.setLayout(null);
         frame.add(panel);
 
@@ -76,6 +77,14 @@ class Gamepage {
     {
         return this.panel;
     }
+
+    public void destroy()
+    {
+        if (!isDestroy){
+            isDestroy = true;
+            frame.setVisible(false);
+        }
+    }
 }
 
 class BackgroundPanel extends JPanel {
@@ -86,6 +95,7 @@ class BackgroundPanel extends JPanel {
     private JFrame frame;
     private Player player;
     private ClientManager client;
+    private Gamepage gpage;
     private int[] target; 
     
     private ArrayList<Bullet> bullets; // เก็บกระสุนทั้งหมด
@@ -97,10 +107,11 @@ class BackgroundPanel extends JPanel {
     private Zombie[] zombies; // เปลี่ยนจากตำแหน่งเป็น Zombie
     private int zombiesToShow = 0;
 
-    BackgroundPanel(JFrame frame, Player player, ClientManager client) {
+    BackgroundPanel(JFrame frame, Player player, ClientManager client, Gamepage gpage) {
         this.frame = frame;
         this.player = player;
         this.client = client;
+        this.gpage = gpage;
     
         this.bullets = new ArrayList<>(); // Create ArrayList for bullets
     
@@ -335,7 +346,7 @@ class BackgroundPanel extends JPanel {
 
         // แสดง dialog เกมโอเวอร์
         showGameOverDialog(this.frame, menu);
-        //setVisible(false);
+        gpage.destroy();
     }
     
 }

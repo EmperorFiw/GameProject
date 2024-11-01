@@ -55,7 +55,7 @@ class ClientManager {
 
     public void connectToServer() {
         try {
-            socket = new Socket("localhost", 7777);
+            socket = new Socket("10.160.92.96", 7777);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
@@ -166,7 +166,7 @@ class ClientManager {
                                         int[] zdata = (int[]) in.readObject();
                                         synchronized (panelgdata) {  // ซิงโครไนซ์การอัปเดตข้อมูลซอมบี้
                                             panelgdata.updateZombie(zdata[0], zdata[1], zdata[2], zdata[3]);
-                                            if (zdata.length > 4 && zdata[4] >= 20)
+                                            if (zdata.length > 4 && zdata[4] >= 80)
                                             {
                                                 if (!player.isGameOver())
                                                 {

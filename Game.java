@@ -541,13 +541,13 @@ class BulletMover extends Thread {
                                             
                                             // ส่งสถานะการอัพเดตซอมบี้ตายไปที่เซิร์ฟเวอร์
                                             client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath, 1);
-                                            System.out.println("sendif" + zombie.getHealth());
+                                            //System.out.println("sendif" + zombie.getHealth());
                                             zombie.setPosition(HIDDEN_POSITION, HIDDEN_POSITION);
                                         } else {
                                             // ถ้าซอมบี้ยังไม่ตายแต่ถูกยิง
                                             if (!shotZombie) {
                                                 client.sendUpdateZP(zombie.getId(), zombie.getPositionX(), zombie.getPositionY(), zombie.getHealth(), zombieDeath, 0);
-                                                System.out.println("sendelse" + zombie.getHealth());
+                                                //System.out.println("sendelse" + zombie.getHealth());
                                                 shotZombie = true; // ป้องกันการส่งข้อมูลซ้ำจากกระสุนตัวเดียวกัน
                                             }
                                         }
